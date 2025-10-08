@@ -1,7 +1,8 @@
 import js from '@eslint/js'
+import type { Linter } from 'eslint'
 import tseslint from 'typescript-eslint'
 
-export const baseConfig = [
+export const baseConfig: Linter.FlatConfig[] = [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -17,7 +18,7 @@ export const baseConfig = [
   },
 ]
 
-export const reactConfig = [
+export const reactConfig: Linter.FlatConfig[] = [
   ...baseConfig,
   {
     plugins: {
@@ -27,7 +28,10 @@ export const reactConfig = [
     rules: {
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
     },
   },
 ]
