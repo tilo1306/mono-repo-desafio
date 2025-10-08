@@ -6,7 +6,7 @@ import { configs as tseslintConfigs } from 'typescript-eslint'
 
 export default [
   { ignores: ['eslint.config.mjs'] },
-  ...baseConfig,
+  baseConfig,
   ...tseslintConfigs.recommendedTypeChecked,
   eslintPluginPrettierRecommended,
   {
