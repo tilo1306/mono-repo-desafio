@@ -1,7 +1,23 @@
 {
-	"devDependencies": {
-		"turbo": "^2.5.8",
-		"typescript": "^5.9.3",
-		"@types/node": "^24.7.0"
-	}
+  "name": "my-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "turbo run format",
+    "format:all": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md,css}\" \"packages/**/*.{ts,js,json}\""
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "packageExtensions": {}
+  }
 }
