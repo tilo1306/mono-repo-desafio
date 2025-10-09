@@ -1,25 +1,39 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { Test, TestingModule } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
+import { User } from '../src/entities/user.entity';
+import { TestAppModule } from './test-app.module';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe('Auth Service (e2e)', () => {
+  let app: INestApplication;
+  let dataSource: DataSource;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [TestAppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    dataSource = moduleFixture.get<DataSource>(DataSource);
+
     await app.init();
+
+    await dataSource.getRepository(User).clear();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterEach(async () => {
+    if (dataSource) {
+      await dataSource.getRepository(User).clear();
+    }
+    await app.close();
+  });
+
+  it('should be defined', () => {
+    expect(app).toBeDefined();
+  });
+
+  it('should have clean database', async () => {
+    const userCount = await dataSource.getRepository(User).count();
+    expect(userCount).toBe(0);
   });
 });

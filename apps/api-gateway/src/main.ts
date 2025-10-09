@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as swaggerUi from 'swagger-ui-express';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,15 +16,9 @@ async function bootstrap() {
     }),
   );
 
-  app.enableShutdownHooks();
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+  app.enableShutdownHooks();
 
   const config = new DocumentBuilder()
     .setTitle('Desafio fullstack Jungle Gaming')

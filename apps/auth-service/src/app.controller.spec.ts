@@ -37,12 +37,14 @@ describe('AppController', () => {
 
   describe('register', () => {
     it('should call appService.register with correct parameters', async () => {
-      service.register.mockResolvedValue(undefined);
+      const mockResponse = { message: 'User created successfully.' };
+      service.register.mockResolvedValue(mockResponse);
 
-      await controller.register(mockRegisterUserDTO);
+      const result = await controller.register(mockRegisterUserDTO);
 
       expect(service.register).toHaveBeenCalledWith(mockRegisterUserDTO);
       expect(service.register).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(mockResponse);
     });
 
     it('should propagate errors from appService', async () => {

@@ -9,11 +9,12 @@ async function bootstrap() {
     {
       transport: Transport.TCP,
       options: {
-        host: '0.0.0.0',
+        host: 'localhost',
         port: parseInt(process.env.PORT ?? '3002'),
       },
     },
   );
+
   await app.listen();
 
   Logger.log(`Auth Service is running on port ${process.env.PORT ?? '3002'}`);

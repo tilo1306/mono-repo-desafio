@@ -19,6 +19,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:watch": "jest --config ./test/jest-e2e.json --watch",
+    "test:e2e:setup": "cp env.test.example .env.test",
+    "test:e2e:db:up": "docker-compose up -d db-test",
+    "test:e2e:db:down": "docker-compose down db-test",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "pnpm typeorm migration:generate -d typeorm.config.ts",
     "migration:run": "pnpm typeorm migration:run -d typeorm.config.ts",
@@ -36,6 +40,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.7",
+    "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "dotenv": "^17.2.3",
     "eslint": "^9.18.0",
@@ -70,6 +75,13 @@
   },
   "dependencies": {
     "@nestjs/config": "^4.0.2",
-    "bcryptjs": "^3.0.2"
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/terminus": "^11.0.0",
+    "bcryptjs": "^3.0.2",
+    "nest-winston": "^1.10.2",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "winston": "^3.18.3"
   }
 }

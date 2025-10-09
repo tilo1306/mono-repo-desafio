@@ -1,9 +1,63 @@
-import { Module } from '@nestjs/common'
-import { AuthModule } from './modules/auth/auth.module'
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
+import { AuthModule } from './modules/auth/auth.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [
+    WinstonModule.forRoot({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.colorize(),
+            winston.format.printf(
+              ({ timestamp, level, message, context, ...meta }) => {
+                const contextStr = context ? `[${context}]` : '';
+                const metaStr = Object.keys(meta).length
+                  ? ` ${JSON.stringify(meta)}`
+                  : '';
+                return `${timestamp} ${level} ${contextStr} ${message}${metaStr}`;
+              },
+            ),
+          ),
+        }),
+        new winston.transports.File({
+          filename: 'logs/error.log',
+          level: 'error',
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.json(),
+          ),
+        }),
+        new winston.transports.File({
+          filename: 'logs/combined.log',
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.json(),
+          ),
+        }),
+      ],
+    }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,
+        limit: 10,
+      },
+    ]),
+    AuthModule,
+    HealthModule,
+  ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

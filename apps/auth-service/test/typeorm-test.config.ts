@@ -1,18 +1,18 @@
 import { config } from 'dotenv';
 import { DataSource } from 'typeorm';
-import { User } from './src/entities/user.entity';
+import { User } from '../src/entities/user.entity';
 
-// Load environment variables
-config();
+config({ path: '.env.test' });
 
-export default new DataSource({
+export const TestDataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
+  port: parseInt(process.env.DB_PORT || '5433'),
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
-  database: process.env.DB_NAME || 'challenge_db',
+  database: process.env.DB_TEST_NAME || 'challenge_test_db',
   entities: [User],
   migrations: ['src/migrations/*.ts'],
-  synchronize: false,
+  synchronize: true,
+  dropSchema: true,
 });

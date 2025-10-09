@@ -133,6 +133,23 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: challenge_db
 
+  # Postgres Test Database
+  db-test:
+    image: postgres:17.5-alpine3.21
+    container_name: db-test
+    attach: false
+    ports:
+      - "5433:5432"
+    networks:
+      - challenge-network
+    restart: always
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: challenge_test_db
+
   # RabbitMQ
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -151,6 +168,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  postgres_test_data:
     driver: local
   rabbitmq_data:
     driver: local
