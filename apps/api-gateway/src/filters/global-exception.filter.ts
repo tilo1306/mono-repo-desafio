@@ -49,13 +49,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       message = exception.message;
       this.logger.error(
-        `Unhandled error: ${exception.message}`,
+        `Unhandled error: ${exception.message} | date: ${new Date().toISOString()}`,
         exception.stack,
       );
     }
 
     this.logger.error(
-      `Exception caught: ${message}`,
+      `Exception caught: ${message} | date: ${new Date().toISOString()}`,
       exception instanceof Error ? exception.stack : undefined,
     );
 

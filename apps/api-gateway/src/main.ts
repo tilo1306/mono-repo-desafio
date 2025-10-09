@@ -8,6 +8,9 @@ import { GlobalExceptionFilter } from './filters/global-exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const globalPrefix = 'api';
+  app.setGlobalPrefix(globalPrefix);
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -42,7 +45,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  app.use('/api', swaggerUi.serve, swaggerUi.setup(document));
+  app.use('/swagger', swaggerUi.serve, swaggerUi.setup(document));
 
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {

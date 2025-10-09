@@ -34,6 +34,7 @@ export class AppService {
         context: 'AppService',
         name: registerUserDTO.name,
         email: registerUserDTO.email,
+        date: new Date().toISOString(),
       });
       throw new RpcException({
         statusCode: 409,
@@ -57,6 +58,7 @@ export class AppService {
       context: 'AppService',
       email: registerUserDTO.email,
       name: registerUserDTO.name,
+      date: new Date().toISOString(),
     });
 
     return {
@@ -71,6 +73,7 @@ export class AppService {
       this.logger.error('User not found', {
         context: 'AppService',
         email: loginUserDTO.email,
+        date: new Date().toISOString(),
       });
       throw new RpcException({
         statusCode: 401,
@@ -88,6 +91,7 @@ export class AppService {
       this.logger.error('Invalid password', {
         context: 'AppService',
         email: loginUserDTO.email,
+        date: new Date().toISOString(),
       });
       throw new RpcException({
         statusCode: 401,
@@ -102,6 +106,7 @@ export class AppService {
       context: 'AppService',
       email: loginUserDTO.email,
       userId: user.id,
+      date: new Date().toISOString(),
     });
 
     return {
@@ -123,6 +128,7 @@ export class AppService {
         this.logger.error('User not found for token refresh', {
           context: 'AppService',
           refreshTokenDTO: refreshTokenDTO,
+          date: new Date().toISOString(),
         });
         throw new UnauthorizedException('Error refreshing token');
       }
@@ -133,6 +139,7 @@ export class AppService {
         context: 'AppService',
         userId: user.id,
         email: user.email,
+        date: new Date().toISOString(),
       });
 
       return tokens;
@@ -141,6 +148,7 @@ export class AppService {
         context: 'AppService',
         error: error instanceof Error ? error.message : String(error),
         refreshTokenDTO: refreshTokenDTO,
+        date: new Date().toISOString(),
       });
       throw new RpcException({
         statusCode: 401,

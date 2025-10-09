@@ -114,6 +114,7 @@ export class AuthController {
         context: 'AuthController',
         email: requestRegisterDTO.email,
         name: requestRegisterDTO.name,
+        date: new Date().toISOString(),
       });
 
       const result = await firstValueFrom(
@@ -123,6 +124,7 @@ export class AuthController {
       this.logger.info('User registration successful', {
         context: 'AuthController',
         email: requestRegisterDTO.email,
+        date: new Date().toISOString(),
       });
 
       return result;
@@ -131,6 +133,7 @@ export class AuthController {
         context: 'AuthController',
         error: error instanceof Error ? error.message : String(error),
         email: requestRegisterDTO.email,
+        date: new Date().toISOString(),
       });
       throw error;
     }
@@ -204,6 +207,7 @@ export class AuthController {
       this.logger.info('User login attempt', {
         context: 'AuthController',
         email: requestLoginDTO.email,
+        date: new Date().toISOString(),
       });
 
       const result = await firstValueFrom(
@@ -213,6 +217,7 @@ export class AuthController {
       this.logger.info('User login successful', {
         context: 'AuthController',
         email: requestLoginDTO.email,
+        date: new Date().toISOString(),
       });
 
       return result;
@@ -221,6 +226,7 @@ export class AuthController {
         context: 'AuthController',
         error: error instanceof Error ? error.message : String(error),
         email: requestLoginDTO.email,
+        date: new Date().toISOString(),
       });
       throw error;
     }
@@ -325,6 +331,7 @@ export class AuthController {
     try {
       this.logger.info('Token refresh attempt', {
         context: 'AuthController',
+        date: new Date().toISOString(),
       });
 
       const result = await firstValueFrom(
@@ -333,6 +340,7 @@ export class AuthController {
 
       this.logger.info('Token refresh successful', {
         context: 'AuthController',
+        date: new Date().toISOString(),
       });
 
       return result;
@@ -340,6 +348,7 @@ export class AuthController {
       this.logger.error('Token refresh error', {
         context: 'AuthController',
         error: error instanceof Error ? error.message : String(error),
+        date: new Date().toISOString(),
       });
       throw error;
     }
