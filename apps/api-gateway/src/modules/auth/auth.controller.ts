@@ -1,11 +1,16 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
   Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ApiBadRequestResponse,
@@ -13,6 +18,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTooManyRequestsResponse,
@@ -25,9 +31,12 @@ import { Logger } from 'winston';
 import { RequestLoginDTO } from './dto/request/request-login.dto';
 import { RequestRefreshTokenDTO } from './dto/request/request-refresh-token.dto';
 import { RequestRegisterDTO } from './dto/request/request-register.dto';
-import { ResponseLoginDTO } from './dto/response/response-login.dtos';
+import { ResponseLoginDTO } from './dto/response/response-login.dto';
 import { ResponseRefreshTokenDTO } from './dto/response/response-refresh-token.dto';
 import { ResponseRegisterDTO } from './dto/response/response-register.dto';
+import { User } from '@/decorators/payload.decorator';
+import { ResponseProfileDTO } from './dto/response/response-profile-dto';
+import { JwtAuthGuard } from '@/guards/jwt-auth.guard';
 
 @Controller('auth')
 @Throttle({ short: { limit: 10, ttl: 1000 } })
@@ -313,5 +322,74 @@ export class AuthController {
       });
       throw error;
     }
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get user profile',
+    description: 'Returns the user profile',
+  })
+  @ApiOkResponse({
+    description: 'User profile returned successfully',
+    type: ResponseProfileDTO,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'User not found' },
+      },
+    },
+  })
+  async profile(@User('sub') userId: string): Promise<ResponseProfileDTO> {
+    return await firstValueFrom(this.authClient.send('profile', userId));
+  }
+
+  @Post('upload-avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Upload user avatar',
+    description: 'Uploads a new avatar image for the authenticated user',
+  })
+  @ApiOkResponse({
+    description: 'Avatar uploaded successfully',
+    type: String,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad request',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Bad request' },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'User not found' },
+      },
+    },
+  })
+  async uploadAvatar(@UploadedFile() file: any, @User('sub') userId: string): Promise<string> {
+    return await firstValueFrom(this.authClient.send('uploadAvatar', { userId, file }));
   }
 }
