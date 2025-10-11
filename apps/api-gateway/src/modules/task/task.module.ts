@@ -1,9 +1,28 @@
 import { Module } from '@nestjs/common';
-import { TaskService } from './task.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TaskController } from './task.controller';
 
 @Module({
+  imports: [
+    ConfigModule,
+    ClientsModule.registerAsync([
+      {
+        name: 'TASKS_SERVICE',
+        imports: [ConfigModule],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: 'localhost',
+            port: configService.get('TASKS_SERVICE_PORT', 3003),
+          },
+        }),
+        inject: [ConfigService],
+      },
+    ]),
+  ],
   controllers: [TaskController],
-  providers: [TaskService],
+  providers: [],
+  exports: [ClientsModule],
 })
 export class TaskModule {}

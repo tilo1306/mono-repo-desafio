@@ -1,0 +1,22 @@
+export enum Priority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
+export enum Status {
+  TODO = 'TODO',
+  IN_PROGRESS = 'IN_PROGRESS',
+  REVIEW = 'REVIEW',
+  DONE = 'DONE',
+}
+
+export enum NotificationType {
+  TASK_CREATED = 'TASK_CREATED',
+  TASK_ASSIGNED = 'TASK_ASSIGNED',
+  TASK_UPDATED = 'TASK_UPDATED',
+  TASK_STATUS_CHANGED = 'TASK_STATUS_CHANGED',
+  TASK_COMMENTED = 'TASK_COMMENTED',
+  COMMENT_CREATED = 'COMMENT_CREATED',
+}

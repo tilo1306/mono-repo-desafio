@@ -11,6 +11,16 @@
     },
     "lint": {},
     "test": {},
-    "format": {}
+    "test:cov": {},
+    "format": {},
+    "migration:run": {
+      "cache": false
+    },
+    "migration:generate": {
+      "cache": false
+    },
+    "migration:revert": {
+      "cache": false
+    }
   }
 }

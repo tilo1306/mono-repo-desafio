@@ -2,10 +2,20 @@
   "name": "@repo/types",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
-  "scripts": { "build": "tsc -p tsconfig.json" },
-  "devDependencies": { "typescript": "^5.9.3" }
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo 'No tests for types package'",
+    "test:cov": "echo 'No tests for types package'"
+  },
+  "dependencies": {
+    "@types/node": "^22.10.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
 }

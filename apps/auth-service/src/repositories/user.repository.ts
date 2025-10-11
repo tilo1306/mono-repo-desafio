@@ -28,4 +28,15 @@ export class UserRepository implements IUserRepository {
 
     return await this.repository.save(user);
   }
+
+  async update(id: string, userData: Partial<User>): Promise<User> {
+    await this.repository.update(id, userData);
+    const updatedUser = await this.repository.findOne({ where: { id } });
+    
+    if (!updatedUser) {
+      throw new Error('User not found after update');
+    }
+    
+    return updatedUser;
+  }
 }

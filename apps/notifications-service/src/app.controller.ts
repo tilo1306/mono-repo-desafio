@@ -1,12 +1,38 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Inject } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { INotificationRepository } from './repositories/notification.repository.interface';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    @Inject('INotificationRepository')
+    private readonly notificationRepository: INotificationRepository,
+  ) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @MessagePattern('getUserNotifications')
+  async getUserNotifications(
+    @Payload() data: { userId: string; limit?: number },
+  ) {
+    return this.notificationRepository.getUserNotifications(
+      data.userId,
+      data.limit,
+    );
+  }
+
+  @MessagePattern('markAsRead')
+  async markAsRead(
+    @Payload() data: { notificationId: string; userId: string },
+  ) {
+    await this.notificationRepository.markAsRead(
+      data.notificationId,
+      data.userId,
+    );
+    return { success: true };
+  }
+
+  @MessagePattern('markAllAsRead')
+  async markAllAsRead(@Payload() data: { userId: string }) {
+    await this.notificationRepository.markAllAsRead(data.userId);
+    return { success: true };
   }
 }

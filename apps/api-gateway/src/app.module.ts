@@ -1,14 +1,21 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { TaskModule } from './modules/task/task.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+    }),
     WinstonModule.forRoot({
       transports: [
         new winston.transports.Console({
@@ -50,8 +57,18 @@ import { TaskModule } from './modules/task/task.module';
         limit: 10,
       },
     ]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET', 'your-secret-key'),
+        signOptions: { expiresIn: '1h' },
+      }),
+      inject: [ConfigService],
+      global: true,
+    }),
     AuthModule,
     HealthModule,
+    NotificationModule,
     TaskModule,
   ],
   controllers: [],

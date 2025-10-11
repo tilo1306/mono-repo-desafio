@@ -7,7 +7,17 @@ import {
   Post,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { firstValueFrom } from 'rxjs';
@@ -34,21 +44,11 @@ export class AuthController {
     description: 'Creates a new user account.',
   })
   @ApiBody({ type: RequestRegisterDTO })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'User registered successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'User created successfully.',
-        },
-      },
-    },
+  @ApiCreatedResponse({
+    description: 'User created successfully',
+    type: ResponseRegisterDTO,
   })
-  @ApiResponse({
-    status: HttpStatus.CONFLICT,
+  @ApiConflictResponse({
     description: 'Email already exists',
     schema: {
       type: 'object',
@@ -68,8 +68,7 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.TOO_MANY_REQUESTS,
+  @ApiTooManyRequestsResponse({
     description: 'Too many requests - Rate limit exceeded',
     schema: {
       type: 'object',
@@ -85,8 +84,7 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
+  @ApiBadRequestResponse({
     description: 'Validation errors',
     schema: {
       type: 'object',
@@ -106,7 +104,7 @@ export class AuthController {
       },
     },
   })
-  async create(
+  async register(
     @Body() requestRegisterDTO: RequestRegisterDTO,
   ): Promise<ResponseRegisterDTO> {
     try {
@@ -147,27 +145,11 @@ export class AuthController {
       'Authenticates a user with email and password and returns a JWT token',
   })
   @ApiBody({ type: RequestLoginDTO })
-  @ApiResponse({
-    status: HttpStatus.OK,
+  @ApiOkResponse({
     description: 'User authenticated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        accessToken: {
-          type: 'string',
-          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-          description: 'Access token JWT',
-        },
-        refreshToken: {
-          type: 'string',
-          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-          description: 'Refresh token to renew the access token',
-        },
-      },
-    },
+    type: ResponseLoginDTO,
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
+  @ApiUnauthorizedResponse({
     description: 'Invalid credentials',
     schema: {
       type: 'object',
@@ -179,8 +161,7 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
+  @ApiForbiddenResponse({
     description: 'Too many failed attempts',
     schema: {
       type: 'object',
@@ -239,29 +220,11 @@ export class AuthController {
     description: 'Renews the access token using a valid refresh token',
   })
   @ApiBody({ type: RequestRefreshTokenDTO })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Token renewed successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        accessToken: {
-          type: 'string',
-          example:
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-          description: 'New access token JWT',
-        },
-        refreshToken: {
-          type: 'string',
-          example:
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-          description: 'New refresh token JWT',
-        },
-      },
-    },
+  @ApiOkResponse({
+    description: 'Token refreshed successfully',
+    type: ResponseRefreshTokenDTO,
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
+  @ApiUnauthorizedResponse({
     description: 'Invalid or expired refresh token',
     schema: {
       type: 'object',
@@ -281,8 +244,7 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
+  @ApiBadRequestResponse({
     description: 'Invalid input data',
     schema: {
       type: 'object',
@@ -308,8 +270,7 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.TOO_MANY_REQUESTS,
+  @ApiTooManyRequestsResponse({
     description: 'Too many refresh attempts - Rate limit exceeded',
     schema: {
       type: 'object',

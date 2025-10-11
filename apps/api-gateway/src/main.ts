@@ -1,4 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as swaggerUi from 'swagger-ui-express';
@@ -7,6 +8,33 @@ import { GlobalExceptionFilter } from './filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use((req, res, next) => {
+    const staticFiles = [
+      '/sw.js',
+      '/sw.js.map',
+      '/manifest.json',
+      '/favicon.ico',
+      '/robots.txt',
+      '/sitemap.xml',
+      '/.well-known',
+      '/assets/',
+      '/static/',
+    ];
+
+    const isStaticFile = staticFiles.some(file => req.path.startsWith(file));
+
+    if (isStaticFile) {
+      console.log(`Static file request blocked: ${req.path}`);
+      return res.status(404).json({
+        statusCode: 404,
+        message: 'Not Found',
+        error: 'Static file not found - this is an API gateway',
+      });
+    }
+
+    next();
+  });
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
@@ -53,6 +81,9 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(process.env.PORT ?? 3001);
+  const configService = app.get(ConfigService);
+  const port = configService.get('PORT', 3001);
+  
+  await app.listen(port);
 }
 bootstrap();

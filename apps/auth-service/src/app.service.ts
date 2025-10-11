@@ -1,16 +1,21 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { LoginResponseDTO } from './dtos/login-response.dto';
-import { LoginDTO } from './dtos/login.dto';
-import { RefreshResponseDTO } from './dtos/refresh-response.dto';
-import { RefreshTokenDTO } from './dtos/refresh-token.dto';
-import { RegisterResponseDTO } from './dtos/register-response.dto';
-import { RegisterUserDTO } from './dtos/register.dto';
+
+import fs from 'fs';
+import path from 'path';
+
 import { HashingService } from './hashing/hashing.service';
 import { AuthJwtService } from './jwt/jwt.service';
 import { IUserRepository } from './repositories/user.repository.interface';
+import { RequestRegisterUserDTO } from './dtos/request/request-register.dto';
+import { ResponseRegisterDTO } from './dtos/response/response.register.dto';
+import { RequestLoginDTO } from './dtos/request/request-login.dto';
+import { ResponseLoginDTO } from './dtos/response/response.login.dto';
+import { RequestRefreshTokenDTO } from './dtos/request/request-refresh-token.dto';
+import { ResponseRefreshTokenDTO } from './dtos/response/response-refresh-token.dto';
+import { ResponseGetProfileDTO } from './dtos/response/response-get-profile.dto';
 
 @Injectable()
 export class AppService {
@@ -23,17 +28,17 @@ export class AppService {
   ) {}
 
   async register(
-    registerUserDTO: RegisterUserDTO,
-  ): Promise<RegisterResponseDTO> {
+    requestRegisterUserDTO: RequestRegisterUserDTO,
+  ): Promise<ResponseRegisterDTO> {
     const isEmailExists = await this.userRepository.findByEmail(
-      registerUserDTO.email,
+      requestRegisterUserDTO.email,
     );
 
     if (isEmailExists) {
       this.logger.error('Email already exists', {
         context: 'AppService',
-        name: registerUserDTO.name,
-        email: registerUserDTO.email,
+        name: requestRegisterUserDTO.name,
+        email: requestRegisterUserDTO.email,
         date: new Date().toISOString(),
       });
       throw new RpcException({
@@ -44,20 +49,21 @@ export class AppService {
     }
 
     const hashedPassword = await this.hashingService.hash(
-      registerUserDTO.password,
+      requestRegisterUserDTO.password,
     );
 
     const userData = {
-      ...registerUserDTO,
+      ...requestRegisterUserDTO,
       password: hashedPassword,
+      avatar: `https://robohash.org/${requestRegisterUserDTO.email}`,
     };
 
     await this.userRepository.create(userData);
 
     this.logger.info('User created successfully', {
       context: 'AppService',
-      email: registerUserDTO.email,
-      name: registerUserDTO.name,
+      email: requestRegisterUserDTO.email,
+      name: requestRegisterUserDTO.name,
       date: new Date().toISOString(),
     });
 
@@ -66,7 +72,7 @@ export class AppService {
     };
   }
 
-  async login(loginUserDTO: LoginDTO): Promise<LoginResponseDTO> {
+  async login(loginUserDTO: RequestLoginDTO): Promise<ResponseLoginDTO> {
     const user = await this.userRepository.findByEmail(loginUserDTO.email);
 
     if (!user) {
@@ -115,11 +121,11 @@ export class AppService {
   }
 
   async refreshToken(
-    refreshTokenDTO: RefreshTokenDTO,
-  ): Promise<RefreshResponseDTO> {
+    requestRefreshTokenDTO: RequestRefreshTokenDTO,
+  ): Promise<ResponseRefreshTokenDTO> {
     try {
       const payload = await this.authJwtService.verifyRefreshToken(
-        refreshTokenDTO.refreshToken,
+        requestRefreshTokenDTO.refreshToken,
       );
 
       const user = await this.userRepository.findById(payload.sub);
@@ -127,7 +133,7 @@ export class AppService {
       if (!user) {
         this.logger.error('User not found for token refresh', {
           context: 'AppService',
-          refreshTokenDTO: refreshTokenDTO,
+          requestRefreshTokenDTO: requestRefreshTokenDTO,
           date: new Date().toISOString(),
         });
         throw new UnauthorizedException('Error refreshing token');
@@ -147,7 +153,7 @@ export class AppService {
       this.logger.error('Error refreshing token', {
         context: 'AppService',
         error: error instanceof Error ? error.message : String(error),
-        refreshTokenDTO: refreshTokenDTO,
+        requestRefreshTokenDTO: requestRefreshTokenDTO,
         date: new Date().toISOString(),
       });
       throw new RpcException({
@@ -156,5 +162,54 @@ export class AppService {
         error: 'Unauthorized',
       });
     }
+  }
+
+  async profile(userId: string): Promise<ResponseGetProfileDTO> {
+    const user = await this.userRepository.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+    };
+  } 
+  async avatar(userId: string, file: any): Promise<string> {
+    const user = await this.userRepository.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const uploadPath = `uploads/avatars/${userId}`;
+
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
+    if (user.avatar && user.avatar.includes('/api/auth/avatar/')) {
+      const oldFileName = user.avatar.split('/').pop();
+      const oldFilePath = path.join(uploadPath, oldFileName || '');
+      
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    }
+
+    const fileName = `${Date.now()}-${userId}`;
+    const fileExtension = path.extname(file.originalname || '.jpg');
+    const finalFileName = `${fileName}${fileExtension}`;
+    const finalFilePath = path.join(uploadPath, finalFileName);
+
+    fs.writeFileSync(finalFilePath, file.buffer);
+
+    const avatarUrl = `/api/auth/avatar/${userId}/${finalFileName}`;
+    
+    await this.userRepository.update(userId, { avatar: avatarUrl });
+
+    return avatarUrl;
   }
 }

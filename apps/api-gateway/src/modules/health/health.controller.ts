@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   DiskHealthIndicator,
@@ -6,6 +7,7 @@ import {
   HealthCheckService,
   MemoryHealthIndicator,
 } from '@nestjs/terminus';
+import { firstValueFrom, timeout } from 'rxjs';
 
 @ApiTags('Health')
 @Controller('health')
@@ -14,6 +16,8 @@ export class HealthController {
     private health: HealthCheckService,
     private memory: MemoryHealthIndicator,
     private disk: DiskHealthIndicator,
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
+    @Inject('TASKS_SERVICE') private readonly tasksClient: ClientProxy,
   ) {}
 
   @Get()
@@ -29,32 +33,63 @@ export class HealthController {
       type: 'object',
       properties: {
         status: { type: 'string', example: 'ok' },
-        timestamp: { type: 'string', example: '2025-10-08T22:50:00.000Z' },
-        uptime: { type: 'number', example: 123.456 },
-        memory: {
+        info: {
           type: 'object',
           properties: {
-            heapUsed: { type: 'number' },
-            heapTotal: { type: 'number' },
-            external: { type: 'number' },
-            rss: { type: 'number' },
+            auth_service: { type: 'string', example: 'up' },
+            tasks_service: { type: 'string', example: 'up' },
+          },
+        },
+        error: { type: 'object', example: {} },
+        details: {
+          type: 'object',
+          properties: {
+            auth_service: { type: 'string', example: 'up' },
+            tasks_service: { type: 'string', example: 'up' },
           },
         },
       },
     },
   })
-  check() {
-    const memUsage = process.memoryUsage();
+  async check() {
+    const healthChecks = {
+      auth_service: 'down',
+      tasks_service: 'down',
+    };
+
+    const errors = {};
+
+    try {
+      await firstValueFrom(
+        this.authClient.send('health', {}).pipe(timeout(5000)),
+      );
+      healthChecks.auth_service = 'up';
+    } catch (error) {
+      errors['auth_service'] =
+        error instanceof Error ? error.message : 'Connection failed';
+    }
+
+    try {
+      await firstValueFrom(
+        this.tasksClient.send('health', {}).pipe(timeout(5000)),
+      );
+      healthChecks.tasks_service = 'up';
+    } catch (error) {
+      errors['tasks_service'] =
+        error instanceof Error ? error.message : 'Connection failed';
+    }
+
+    const overallStatus = Object.values(healthChecks).every(
+      status => status === 'up',
+    )
+      ? 'ok'
+      : 'error';
+
     return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: {
-        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-        external: Math.round(memUsage.external / 1024 / 1024),
-        rss: Math.round(memUsage.rss / 1024 / 1024),
-      },
+      status: overallStatus,
+      info: healthChecks,
+      error: errors,
+      details: healthChecks,
     };
   }
 

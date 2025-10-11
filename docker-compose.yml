@@ -1,161 +1,153 @@
-version: "3.8"
+version: "3.9"
+
+x-node-service: &node-service
+  restart: unless-stopped
+  networks:
+    - challenge-network
+  environment:
+    - NODE_ENV=development
+    - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+    - DB_HOST=db
+    - DB_PORT=5432
+    - DB_USERNAME=postgres
+    - DB_PASSWORD=password
+    - DB_NAME=challenge_db
+  depends_on:
+    db:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
 
 services:
-  # Frontend React Application
+  # Frontend (Next.js/React)
   web:
+    <<: *node-service
     container_name: web
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
-      target: development
     ports:
       - "3000:3000"
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - .:/app
+      - web_node_modules:/app/apps/web/node_modules
     environment:
       - NODE_ENV=development
-    networks:
-      - challenge-network
-    command: npm run dev -- --host 0.0.0.0
+      - PORT=3000
 
   # API Gateway
   api-gateway:
+    <<: *node-service
     container_name: api-gateway
     build:
       context: .
       dockerfile: ./apps/api-gateway/Dockerfile
-      target: development
+      target: api-gateway
     ports:
       - "3001:3001"
-    volumes:
-      - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/api-gateway/node_modules
     environment:
       - NODE_ENV=development
       - PORT=3001
-    depends_on:
-      db:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
-    networks:
-      - challenge-network
+    volumes:
+      - .:/app
+      - apigw_node_modules:/app/apps/api-gateway/node_modules
 
   # Auth Service
   auth-service:
+    <<: *node-service
     container_name: auth-service
     build:
       context: .
       dockerfile: ./apps/auth-service/Dockerfile
-      target: development
     ports:
       - "3002:3002"
+    environment:
+      - PORT=3002
     volumes:
       - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/auth-service/node_modules
-    environment:
-      - NODE_ENV=development
-      - PORT=3002
-    depends_on:
-      db:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
-    networks:
-      - challenge-network
+      - auth_node_modules:/app/apps/auth-service/node_modules
 
   # Tasks Service
   tasks-service:
+    <<: *node-service
     container_name: tasks-service
     build:
       context: .
       dockerfile: ./apps/tasks-service/Dockerfile
-      target: development
     ports:
       - "3003:3003"
+    environment:
+      - PORT=3003
     volumes:
       - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/tasks-service/node_modules
-    environment:
-      - NODE_ENV=development
-      - PORT=3003
-    depends_on:
-      db:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
-    networks:
-      - challenge-network
+      - tasks_node_modules:/app/apps/tasks-service/node_modules
 
   # Notifications Service
   notifications-service:
+    <<: *node-service
     container_name: notifications-service
     build:
       context: .
       dockerfile: ./apps/notifications-service/Dockerfile
-      target: development
     ports:
       - "3004:3004"
+    environment:
+      - PORT=3004
     volumes:
       - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/notifications-service/node_modules
-    environment:
-      - NODE_ENV=development
-      - PORT=3004
-    depends_on:
-      db:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
-    networks:
-      - challenge-network
+      - notif_node_modules:/app/apps/notifications-service/node_modules
 
-  # Postgres Database
+  # Postgres (dev)
   db:
-    image: postgres:17.5-alpine3.21
+    image: postgres:17-alpine
     container_name: db
-    attach: false
+    restart: unless-stopped
     ports:
       - "5432:5432"
     networks:
       - challenge-network
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
       POSTGRES_DB: challenge_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d challenge_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
-  # Postgres Test Database
+  # Postgres (test) - sobe só quando pedir: `--profile test up`
   db-test:
-    image: postgres:17.5-alpine3.21
+    image: postgres:17-alpine
     container_name: db-test
-    attach: false
+    profiles: ["test"]
+    restart: unless-stopped
     ports:
       - "5433:5432"
     networks:
       - challenge-network
-    restart: always
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
       POSTGRES_DB: challenge_test_db
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d challenge_test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   # RabbitMQ
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: rabbitmq
-    attach: false
-    restart: always
+    restart: unless-stopped
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -164,15 +156,24 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
-    volumes: ["rabbitmq_data:/var/lib/rabbitmq"]
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
 volumes:
   postgres_data:
-    driver: local
   postgres_test_data:
-    driver: local
   rabbitmq_data:
-    driver: local
+  web_node_modules:
+  apigw_node_modules:
+  auth_node_modules:
+  tasks_node_modules:
+  notif_node_modules:
 
 networks:
   challenge-network:
