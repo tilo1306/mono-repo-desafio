@@ -6,7 +6,7 @@ RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 
-COPY packages/*/package.json packages/*/
+COPY packages ./packages
 COPY apps/api-gateway/package.json apps/api-gateway/
 
 FROM base AS pruner
@@ -21,11 +21,14 @@ RUN corepack enable
 COPY --from=pruner /repo/out/json/ ./
 COPY --from=pruner /repo/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 FROM installer AS builder
 
 COPY --from=pruner /repo/out/full/ ./
+COPY apps/api-gateway/tsconfig.json apps/api-gateway/
+COPY apps/api-gateway/tsconfig.build.json apps/api-gateway/
+COPY apps/api-gateway/nest-cli.json apps/api-gateway/
  
 RUN pnpm -w --filter api-gateway... build
 

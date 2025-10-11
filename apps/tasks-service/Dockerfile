@@ -5,10 +5,10 @@ WORKDIR /repo
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY packages/*/package.json packages/*/
+COPY packages ./packages
 COPY apps/tasks-service/package.json apps/tasks-service/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 FROM base AS builder
 

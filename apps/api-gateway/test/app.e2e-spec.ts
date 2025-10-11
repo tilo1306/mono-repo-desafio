@@ -106,7 +106,6 @@ describe('API Gateway (e2e)', () => {
     let accessToken: string;
 
     beforeEach(async () => {
-      // Register and login to get access token
       await request(app.getHttpServer()).post('/api/auth/register').send({
         email: 'taskuser@example.com',
         password: 'password123',
@@ -233,7 +232,6 @@ describe('API Gateway (e2e)', () => {
     let accessToken: string;
 
     beforeEach(async () => {
-      // Register and login to get access token
       await request(app.getHttpServer()).post('/api/auth/register').send({
         email: 'notifuser@example.com',
         password: 'password123',

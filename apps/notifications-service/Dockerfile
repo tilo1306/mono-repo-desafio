@@ -6,10 +6,10 @@ WORKDIR /repo
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY packages/*/package.json packages/*/
+COPY packages ./packages
 COPY apps/notifications-service/package.json apps/notifications-service/
 
-RUN pnpm -w install --frozen-lockfile --filter notifications-service...
+RUN pnpm -w install --no-frozen-lockfile --filter notifications-service...
 
 FROM base AS builder
 

@@ -73,7 +73,6 @@ describe('Notifications Service E2E', () => {
 
   describe('Notification Flow E2E', () => {
     it('should handle complete notification flow', async () => {
-      // Setup mocks
       notificationRepository.createNotification.mockResolvedValue(
         mockNotification,
       );
@@ -82,7 +81,6 @@ describe('Notifications Service E2E', () => {
       ]);
       webSocketService.deliverNotification.mockResolvedValue();
 
-      // Test notification creation and retrieval
       const notifications = await service.getUserNotifications('user-1', 10);
       expect(notifications).toEqual([mockNotification]);
       expect(notificationRepository.getUserNotifications).toHaveBeenCalledWith(
@@ -90,14 +88,12 @@ describe('Notifications Service E2E', () => {
         10,
       );
 
-      // Test marking as read
       await service.markAsRead('notification-1', 'user-1');
       expect(notificationRepository.markAsRead).toHaveBeenCalledWith(
         'notification-1',
         'user-1',
       );
 
-      // Test marking all as read
       await service.markAllAsRead('user-1');
       expect(notificationRepository.markAllAsRead).toHaveBeenCalledWith(
         'user-1',
@@ -121,7 +117,6 @@ describe('Notifications Service E2E', () => {
         );
         webSocketService.deliverNotification.mockResolvedValue();
 
-        // Simulate processing the event
         await service.getUserNotifications('user-1', 10);
 
         expect(notificationRepository.getUserNotifications).toHaveBeenCalled();

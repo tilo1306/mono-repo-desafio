@@ -33,7 +33,6 @@ export class TaskRepository implements ITaskRepository {
   async findByUserIdWithPagination(userId: string, page: number, size: number) {
     const skip = (page - 1) * size;
 
-    // Buscar tarefas onde o usuário é criador ou assignee
     const query = this.repository
       .createQueryBuilder('task')
       .leftJoin('task.assignees', 'assignee')
@@ -56,7 +55,6 @@ export class TaskRepository implements ITaskRepository {
   }
 
   async hasUserAccess(taskId: string, userId: string): Promise<boolean> {
-    // Verificar se o usuário é criador da tarefa
     const task = await this.repository.findOne({
       where: { id: taskId, userId },
     });
@@ -65,7 +63,6 @@ export class TaskRepository implements ITaskRepository {
       return true;
     }
 
-    // Verificar se o usuário é assignee da tarefa
     const assignee = await this.assigneeRepository.findOne({
       where: { taskId, userId },
     });

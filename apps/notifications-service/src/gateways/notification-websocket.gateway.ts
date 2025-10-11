@@ -33,9 +33,6 @@ export class NotificationWebSocketGateway
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
 
-    // Remove client from connected users
-    // Note: In a real implementation, you'd need to track userId -> socket mapping
-    // This is a simplified version
   }
 
   @SubscribeMessage('authenticate')
@@ -45,7 +42,6 @@ export class NotificationWebSocketGateway
   ) {
     const { userId } = data;
 
-    // Associate socket with user
     this.webSocketService.addClient(userId, client);
 
     this.logger.log(`User ${userId} authenticated with socket ${client.id}`);

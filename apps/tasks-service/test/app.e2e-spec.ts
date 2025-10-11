@@ -33,7 +33,6 @@ describe('Tasks Service E2E', () => {
         await dataSource.query('DELETE FROM task');
         await dataSource.query('DELETE FROM "user"');
       } catch (error) {
-        // Ignore cleanup errors
       }
     }
     if (app) {
@@ -57,7 +56,6 @@ describe('Tasks Service E2E', () => {
 
   describe('Task Creation Flow', () => {
     it('should create task with assignees and publish notifications', async () => {
-      // Create users first
       const creator = await dataSource.getRepository(User).save({
         name: 'Creator User',
         email: 'creator@example.com',
@@ -84,15 +82,12 @@ describe('Tasks Service E2E', () => {
         status: 'TODO' as any,
       };
 
-      // Execute
       const result = await service.createTask(createTaskDto);
 
-      // Assertions
       expect(result).toBeDefined();
       expect(result.title).toBe('E2E Test Task');
       expect(result.userId).toBe(creator.id);
 
-      // Verify task was created in database
       const savedTask = await dataSource.getRepository(Task).findOne({
         where: { id: result.id },
         relations: ['assignees', 'comments'],
@@ -100,7 +95,6 @@ describe('Tasks Service E2E', () => {
       expect(savedTask).toBeDefined();
       expect(savedTask?.title).toBe('E2E Test Task');
 
-      // Verify assignee was created
       const savedAssignee = await dataSource.getRepository(Assignee).findOne({
         where: { taskId: result.id, userId: assignee.id },
       });
@@ -110,7 +104,6 @@ describe('Tasks Service E2E', () => {
 
   describe('Task Update Flow', () => {
     it('should update task and publish notification', async () => {
-      // Create user and task first
       const user = await dataSource.getRepository(User).save({
         name: 'Test User',
         email: 'user@example.com',
@@ -143,7 +136,6 @@ describe('Tasks Service E2E', () => {
       expect(result.title).toBe('Updated E2E Task');
       expect(result.status).toBe('IN_PROGRESS');
 
-      // Verify task was updated in database
       const updatedTask = await dataSource.getRepository(Task).findOne({
         where: { id: task.id },
       });
@@ -154,7 +146,6 @@ describe('Tasks Service E2E', () => {
 
   describe('Comment Flow', () => {
     it('should add comment and publish notification', async () => {
-      // Create user and task first
       const user = await dataSource.getRepository(User).save({
         name: 'Commenter User',
         email: 'commenter@example.com',
@@ -183,7 +174,6 @@ describe('Tasks Service E2E', () => {
       expect(result.taskId).toBe(task.id);
       expect(result.authorId).toBe(user.id);
 
-      // Verify comment was created in database
       const savedComment = await dataSource.getRepository(Comment).findOne({
         where: { id: result.id },
         relations: ['task'],
@@ -195,7 +185,6 @@ describe('Tasks Service E2E', () => {
 
   describe('Pagination Flow', () => {
     it('should return paginated tasks', async () => {
-      // Create user and tasks first
       const user = await dataSource.getRepository(User).save({
         name: 'Paginated User',
         email: 'paginated@example.com',
@@ -204,7 +193,6 @@ describe('Tasks Service E2E', () => {
         updatedAt: new Date(),
       });
 
-      // Create multiple tasks
       for (let i = 1; i <= 3; i++) {
         await dataSource.getRepository(Task).save({
           title: `Task ${i}`,
@@ -230,7 +218,6 @@ describe('Tasks Service E2E', () => {
     });
 
     it('should return paginated comments', async () => {
-      // Create user and task first
       const user = await dataSource.getRepository(User).save({
         name: 'Comment Paginated User',
         email: 'commentpaginated@example.com',
@@ -252,7 +239,6 @@ describe('Tasks Service E2E', () => {
         updatedAt: new Date(),
       });
 
-      // Create multiple comments
       for (let i = 1; i <= 3; i++) {
         await dataSource.getRepository(Comment).save({
           taskId: task.id,

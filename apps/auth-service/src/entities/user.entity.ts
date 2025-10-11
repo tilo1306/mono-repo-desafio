@@ -20,6 +20,9 @@ export class User {
   @Column({ length: 100 })
   password: string;
 
+  @Column()
+  avatar: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

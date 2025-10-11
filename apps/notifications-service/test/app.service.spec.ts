@@ -159,7 +159,6 @@ describe('Notifications Service', () => {
     it('should determine correct WebSocket event based on notification type', () => {
       const service = new WebSocketService();
 
-      // Test private method through public method
       const testCases = [
         { type: NotificationType.TASK_CREATED, expected: 'task:created' },
         { type: NotificationType.TASK_UPDATED, expected: 'task:updated' },
@@ -169,7 +168,6 @@ describe('Notifications Service', () => {
 
       testCases.forEach(({ type, expected }) => {
         const notification = { ...mockNotification, type };
-        // We can't directly test private method, but we can test the behavior
         expect(type).toBeDefined();
         expect(expected).toBeDefined();
       });

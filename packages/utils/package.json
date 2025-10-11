@@ -13,9 +13,7 @@
     "test:cov": "echo 'No tests for utils package'"
   },
   "dependencies": {
-    "@types/node": "^22.10.7"
+    "@types/node": "^24.7.2"
   },
-  "devDependencies": {
-    "typescript": "^5.9.3"
-  }
+  "devDependencies": {}
 }

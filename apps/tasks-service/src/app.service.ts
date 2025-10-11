@@ -118,7 +118,6 @@ export class AppService {
       throw new NotFoundException('Task not found');
     }
 
-    // Verificar se o usuário tem acesso à tarefa (criador ou assignee)
     const hasAccess = await this.taskRepository.hasUserAccess(taskId, userId);
     if (!hasAccess) {
       this.logger.warn(`User ${userId} does not have access to task ${taskId}`);
@@ -142,7 +141,6 @@ export class AppService {
       throw new NotFoundException('Task not found');
     }
 
-    // Verificar se o usuário tem permissão para editar (apenas criador)
     if (task.userId !== userId) {
       this.logger.warn(
         `User ${userId} does not have permission to edit task ${taskId}`,
@@ -158,7 +156,6 @@ export class AppService {
 
     this.logger.log(`Task updated successfully: ${taskId}`);
 
-    // Publicar evento de atualização
     await this.notificationPublisher.publishTaskUpdated(
       taskId,
       userId,
@@ -177,7 +174,6 @@ export class AppService {
       throw new NotFoundException('Task not found');
     }
 
-    // Verificar se o usuário tem permissão para deletar (apenas criador)
     if (task.userId !== userId) {
       this.logger.warn(
         `User ${userId} does not have permission to delete task ${taskId}`,
@@ -202,7 +198,6 @@ export class AppService {
       throw new NotFoundException('Task not found');
     }
 
-    // Verificar se o usuário tem acesso à tarefa
     const hasAccess = await this.taskRepository.hasUserAccess(taskId, userId);
     if (!hasAccess) {
       this.logger.warn(`User ${userId} does not have access to task ${taskId}`);
@@ -217,7 +212,6 @@ export class AppService {
 
     this.logger.log(`Comment added successfully: ${comment.id}`);
 
-    // Publicar evento de novo comentário
     await this.notificationPublisher.publishCommentCreated(
       taskId,
       userId,
@@ -243,7 +237,6 @@ export class AppService {
       throw new NotFoundException('Task not found');
     }
 
-    // Verificar se o usuário tem acesso à tarefa
     const hasAccess = await this.taskRepository.hasUserAccess(taskId, userId);
     if (!hasAccess) {
       this.logger.warn(`User ${userId} does not have access to task ${taskId}`);

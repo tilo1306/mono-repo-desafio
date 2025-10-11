@@ -108,7 +108,6 @@ describe('WebSocketService', () => {
         createdAt: new Date(),
       };
 
-      // Should not throw error when user is not connected
       expect(() =>
         service.deliverNotification('user-1', notification),
       ).not.toThrow();

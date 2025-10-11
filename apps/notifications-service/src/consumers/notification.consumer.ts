@@ -21,11 +21,9 @@ export class NotificationConsumer {
         `Processing notification event: ${event.type} for user ${event.userId}`,
       );
 
-      // Persistir todas as notificações no banco (incluindo globais)
       const notification =
         await this.notificationRepository.createNotification(event);
 
-      // Entregar via WebSocket
       await this.webSocketService.deliverNotification(
         event.userId,
         notification,

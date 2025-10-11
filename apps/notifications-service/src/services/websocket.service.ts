@@ -9,7 +9,6 @@ export class WebSocketService {
 
   async deliverNotification(userId: string, notification: Notification) {
     try {
-      // Determinar o evento WebSocket baseado no tipo de notificação
       const websocketEvent = this.getWebSocketEvent(notification.type);
 
       if (userId === 'global') {

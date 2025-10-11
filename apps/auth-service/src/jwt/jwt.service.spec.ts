@@ -8,6 +8,7 @@ const mockUser: User = {
   name: 'João Silva',
   email: 'joao@example.com',
   password: 'hashedPassword123',
+  avatar: 'https://robohash.org/joao@example.com',
   createdAt: new Date('2024-01-01T00:00:00Z'),
   updatedAt: new Date('2024-01-01T00:00:00Z'),
 };
