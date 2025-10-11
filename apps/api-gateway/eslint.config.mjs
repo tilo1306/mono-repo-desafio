@@ -1,4 +1,3 @@
-// @ts-check
 import { baseConfig } from '@repo/eslint-config'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals'

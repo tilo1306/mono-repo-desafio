@@ -1,8 +1,7 @@
 import js from '@eslint/js'
-import type { Linter } from 'eslint'
 import tseslint from 'typescript-eslint'
 
-export const baseConfig: Linter.FlatConfig[] = [
+export const baseConfig: any[] = [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -18,7 +17,7 @@ export const baseConfig: Linter.FlatConfig[] = [
   },
 ]
 
-export const reactConfig: Linter.FlatConfig[] = [
+export const reactConfig: any[] = [
   ...baseConfig,
   {
     plugins: {
