@@ -62,7 +62,7 @@ import { UserRepository } from './repositories/user.repository';
         password: configService.get('DB_PASSWORD', 'password'),
         database: configService.get('DB_NAME', 'challenge_db'),
         entities: [User],
-        migrations: ['src/migrations/*.ts'],
+        migrations: ['dist/src/migrations/*.js'],
         migrationsRun: true,
         synchronize: false,
         logging: configService.get('NODE_ENV') === 'development',

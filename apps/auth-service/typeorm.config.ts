@@ -9,7 +9,7 @@ export default new DataSource({
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'challenge_db',
   entities: [User],
-  migrations: ['src/migrations/*.ts'],
+  migrations: ['dist/src/migrations/*.js'],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
 });
