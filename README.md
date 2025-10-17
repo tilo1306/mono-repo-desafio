@@ -39,6 +39,11 @@ docker compose up -d
 docker compose ps
 ```
 
+5. **Acessar a pagina cole esse link no navegador**
+
+````bash
+http://localhost:3000/```
+
 ## 📱 Serviços Disponíveis
 
 | Serviço               | Porta | Descrição               |
@@ -94,7 +99,7 @@ pnpm test:e2e
 
 # Executar testes com cobertura
 pnpm test:cov
-```
+````
 
 ### 🖥️ Testes do Backend (NestJS)
 
