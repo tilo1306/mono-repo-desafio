@@ -23,10 +23,17 @@
     "test:e2e:setup": "cp env.test.example .env.test",
     "test:e2e:db:up": "docker-compose up -d db-test",
     "test:e2e:db:down": "docker-compose down db-test",
+    "test:all": "npm run test && npm run test:e2e",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "pnpm typeorm migration:generate -d typeorm.config.ts",
     "migration:run": "pnpm typeorm migration:run -d typeorm.config.ts",
-    "migration:revert": "pnpm typeorm migration:revert -d typeorm.config.ts"
+    "migration:revert": "pnpm typeorm migration:revert -d typeorm.config.ts",
+    "seed:users": "ts-node src/seed/run-users-seed.ts",
+    "db:setup": "pnpm run migration:run && pnpm run seed:users",
+    "db:migrate": "pnpm run migration:run",
+    "db:seed": "pnpm run seed:users",
+    "db:test:setup": "DB_HOST=localhost DB_PORT=5433 DB_NAME=challenge_test_db pnpm run migration:run",
+    "db:test:migrate": "DB_HOST=localhost DB_PORT=5433 DB_NAME=challenge_test_db pnpm run migration:run"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
@@ -37,6 +44,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/terminus": "^11.0.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@repo/utils": "workspace:*",
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.4.5",
     "multer": "^1.4.5-lts.1",
@@ -93,6 +101,12 @@
       "src/**/*.(t|j)s"
     ],
     "coverageDirectory": "coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@repo|@nestjs)/)"
+    ],
+    "moduleNameMapper": {
+      "^@repo/(.*)$": "<rootDir>/../../packages/$1/src"
+    }
   }
 }

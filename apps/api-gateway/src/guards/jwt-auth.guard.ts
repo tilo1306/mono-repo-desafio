@@ -2,16 +2,22 @@ import { IS_PUBLIC_KEY } from '@/decorators/public.decorator';
 import {
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { RpcErrorHelper } from '@repo/utils';
 
 @Injectable()
 export class JwtAuthGuard {
+  private readonly logger = new Logger(JwtAuthGuard.name);
+
   constructor(
     private reflector: Reflector,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -25,32 +31,42 @@ export class JwtAuthGuard {
     }
 
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const headerToken = this.extractTokenFromHeader(request);
+    const tokenCookie = this.extractTokenFromCookie(request);
+
+    if (headerToken && tokenCookie && headerToken !== tokenCookie) {
+      console.warn(
+        'JWT token mismatch between Authorization header and cookie; preferring header',
+      );
+    }
+
+    const token = headerToken ?? tokenCookie;
 
     if (!token) {
-      throw new UnauthorizedException('JWT token not found');
+      throw new UnauthorizedException(
+        RpcErrorHelper.UnauthorizedException('JWT token not found'),
+      );
     }
 
     try {
-      const payload = this.jwtService.verify(token);
+      const secret = this.configService.get<string>('JWT_SECRET', 'secret123');
 
-      if (
-        payload.requiresTwoFactor === true &&
-        payload.isSecondFactorAuthenticated !== true
-      ) {
-        throw new UnauthorizedException(
-          'Two-factor authentication required to access this resource',
-        );
-      }
+      const payload = this.jwtService.verify(token, {
+        secret: secret,
+      });
 
       request.user = payload;
       return true;
     } catch (error) {
       if (error instanceof Error && error.name === 'TokenExpiredError') {
-        throw new UnauthorizedException('Token expired');
+        throw new UnauthorizedException(
+          RpcErrorHelper.UnauthorizedException('Token expired'),
+        );
       }
 
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException(
+        RpcErrorHelper.UnauthorizedException('Invalid token'),
+      );
     }
   }
 
@@ -60,5 +76,10 @@ export class JwtAuthGuard {
       return undefined;
     }
     return authHeader.substring(7);
+  }
+
+  private extractTokenFromCookie(request: any): string | undefined {
+    const cookies = request.cookies;
+    return cookies.access_token;
   }
 }

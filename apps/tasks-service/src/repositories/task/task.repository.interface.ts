@@ -9,6 +9,7 @@ export interface ITaskRepository {
     userId: string,
     page: number,
     size: number,
+    filters?: { q?: string; status?: string; priority?: string },
   ): Promise<{
     data: Task[];
     total: number;
@@ -16,7 +17,22 @@ export interface ITaskRepository {
     size: number;
     totalPages: number;
   }>;
-  hasUserAccess(taskId: string, userId: string): Promise<boolean>;
+  findAllWithPagination(
+    page: number,
+    size: number,
+    filters?: { q?: string; status?: string; priority?: string },
+  ): Promise<{
+    data: Task[];
+    total: number;
+    page: number;
+    size: number;
+    totalPages: number;
+  }>;
   update(id: string, taskData: Partial<Task>): Promise<Task | null>;
   delete(id: string): Promise<boolean>;
+  getTaskAssigneesWithEmails(
+    taskId: string,
+  ): Promise<
+    Array<{ id: string; userId: string; taskId: string; email: string }>
+  >;
 }

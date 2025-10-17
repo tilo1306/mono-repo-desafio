@@ -49,6 +49,8 @@ describe('AppService', () => {
       findById: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      findMany: jest.fn(),
+      findManyPaginated: jest.fn(),
     };
 
     const mockHashingService = {
@@ -312,7 +314,9 @@ describe('AppService', () => {
       expect(userRepository.update).toHaveBeenCalledWith(mockUser.id, {
         avatar: expect.stringContaining('/api/auth/avatar/'),
       });
-      expect(result).toMatch(/\/api\/auth\/avatar\/123e4567-e89b-12d3-a456-426614174000\/\d+-123e4567-e89b-12d3-a456-426614174000\.jpg/);
+      expect(result).toMatchObject({
+        avatarUrl: expect.stringMatching(/\/api\/auth\/avatar\/123e4567-e89b-12d3-a456-426614174000\/\d+-123e4567-e89b-12d3-a456-426614174000\.jpg/)
+      });
     });
 
     it('should replace existing avatar successfully', async () => {
@@ -332,7 +336,9 @@ describe('AppService', () => {
       expect(userRepository.update).toHaveBeenCalledWith(mockUser.id, {
         avatar: expect.stringContaining('/api/auth/avatar/'),
       });
-      expect(result).toMatch(/\/api\/auth\/avatar\/123e4567-e89b-12d3-a456-426614174000\/\d+-123e4567-e89b-12d3-a456-426614174000\.jpg/);
+      expect(result).toMatchObject({
+        avatarUrl: expect.stringMatching(/\/api\/auth\/avatar\/123e4567-e89b-12d3-a456-426614174000\/\d+-123e4567-e89b-12d3-a456-426614174000\.jpg/)
+      });
     });
 
     it('should throw NotFoundException when user does not exist', async () => {
@@ -344,6 +350,253 @@ describe('AppService', () => {
 
       expect(userRepository.findById).toHaveBeenCalledWith(mockUser.id);
       expect(userRepository.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updatePassword', () => {
+    const mockUpdatePasswordDTO = {
+      password: 'currentPassword123',
+      newPassword: 'newPassword123',
+    };
+
+    it('should update password successfully', async () => {
+      const mockUserWithPassword = {
+        ...mockUser,
+        password: 'hashedCurrentPassword',
+      };
+      
+      userRepository.findById.mockResolvedValue(mockUserWithPassword);
+      hashingService.compare.mockResolvedValue(true);
+      hashingService.hash.mockResolvedValue('hashedNewPassword');
+      userRepository.update.mockResolvedValue(mockUserWithPassword);
+
+      await service.updatePassword(mockUser.id, mockUpdatePasswordDTO);
+
+      expect(userRepository.findById).toHaveBeenCalledWith(mockUser.id);
+      expect(hashingService.compare).toHaveBeenCalledWith(
+        mockUpdatePasswordDTO.password,
+        mockUserWithPassword.password,
+      );
+      expect(hashingService.hash).toHaveBeenCalledWith(mockUpdatePasswordDTO.newPassword);
+      expect(userRepository.update).toHaveBeenCalledWith(mockUser.id, {
+        password: 'hashedNewPassword',
+      });
+    });
+
+    it('should throw NotFoundException when user does not exist', async () => {
+      userRepository.findById.mockResolvedValue(null);
+
+      await expect(service.updatePassword(mockUser.id, mockUpdatePasswordDTO)).rejects.toThrow(
+        'User not found',
+      );
+
+      expect(userRepository.findById).toHaveBeenCalledWith(mockUser.id);
+      expect(hashingService.compare).not.toHaveBeenCalled();
+      expect(hashingService.hash).not.toHaveBeenCalled();
+      expect(userRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException when current password is invalid', async () => {
+      const mockUserWithPassword = {
+        ...mockUser,
+        password: 'hashedCurrentPassword',
+      };
+      
+      userRepository.findById.mockResolvedValue(mockUserWithPassword);
+      hashingService.compare.mockResolvedValue(false);
+
+      await expect(service.updatePassword(mockUser.id, mockUpdatePasswordDTO)).rejects.toThrow(
+        'Invalid password',
+      );
+
+      expect(userRepository.findById).toHaveBeenCalledWith(mockUser.id);
+      expect(hashingService.compare).toHaveBeenCalledWith(
+        mockUpdatePasswordDTO.password,
+        mockUserWithPassword.password,
+      );
+      expect(hashingService.hash).not.toHaveBeenCalled();
+      expect(userRepository.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('users', () => {
+    const mockUsers = [
+      {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'João Silva',
+        email: 'joao@example.com',
+        password: 'hashedPassword123',
+        avatar: 'https://robohash.org/joao@example.com',
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+        updatedAt: new Date('2024-01-01T00:00:00Z'),
+      },
+      {
+        id: '456e7890-e89b-12d3-a456-426614174001',
+        name: 'Maria Santos',
+        email: 'maria@example.com',
+        password: 'hashedPassword456',
+        avatar: 'https://robohash.org/maria@example.com',
+        createdAt: new Date('2024-01-02T00:00:00Z'),
+        updatedAt: new Date('2024-01-02T00:00:00Z'),
+      },
+    ];
+
+    it('should return paginated list of users successfully', async () => {
+      const mockPaginatedResult = {
+        data: mockUsers,
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      };
+
+      userRepository.findManyPaginated.mockResolvedValue(mockPaginatedResult);
+
+      const requestUsersDTO = {
+        page: 1,
+        limit: 10,
+      };
+
+      const result = await service.users(requestUsersDTO);
+
+      expect(userRepository.findManyPaginated).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        email: undefined,
+      });
+      expect(result).toEqual({
+        data: [
+          {
+            name: 'João Silva',
+            email: 'joao@example.com',
+            avatar: 'https://robohash.org/joao@example.com',
+          },
+          {
+            name: 'Maria Santos',
+            email: 'maria@example.com',
+            avatar: 'https://robohash.org/maria@example.com',
+          },
+        ],
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 2,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+      });
+    });
+
+    it('should filter users by email when provided', async () => {
+      const mockPaginatedResult = {
+        data: [mockUsers[0]],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      };
+
+      userRepository.findManyPaginated.mockResolvedValue(mockPaginatedResult);
+
+      const requestUsersDTO = {
+        page: 1,
+        limit: 10,
+        email: 'joao',
+      };
+
+      const result = await service.users(requestUsersDTO);
+
+      expect(userRepository.findManyPaginated).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        email: 'joao',
+      });
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].email).toBe('joao@example.com');
+    });
+
+    it('should return empty array when no users exist', async () => {
+      const mockPaginatedResult = {
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false,
+      };
+
+      userRepository.findManyPaginated.mockResolvedValue(mockPaginatedResult);
+
+      const requestUsersDTO = {
+        page: 1,
+        limit: 10,
+      };
+
+      const result = await service.users(requestUsersDTO);
+
+      expect(userRepository.findManyPaginated).toHaveBeenCalledTimes(1);
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
+    });
+
+    it('should handle pagination correctly', async () => {
+      const mockPaginatedResult = {
+        data: [mockUsers[1]],
+        total: 2,
+        page: 2,
+        limit: 1,
+        totalPages: 2,
+        hasNext: false,
+        hasPrev: true,
+      };
+
+      userRepository.findManyPaginated.mockResolvedValue(mockPaginatedResult);
+
+      const requestUsersDTO = {
+        page: 2,
+        limit: 1,
+      };
+
+      const result = await service.users(requestUsersDTO);
+
+      expect(userRepository.findManyPaginated).toHaveBeenCalledWith({
+        page: 2,
+        limit: 1,
+        email: undefined,
+      });
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.limit).toBe(1);
+      expect(result.meta.totalPages).toBe(2);
+      expect(result.meta.hasNext).toBe(false);
+      expect(result.meta.hasPrev).toBe(true);
+    });
+
+    it('should use default values when not provided', async () => {
+      const mockPaginatedResult = {
+        data: mockUsers,
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      };
+
+      userRepository.findManyPaginated.mockResolvedValue(mockPaginatedResult);
+
+      const result = await service.users({});
+
+      expect(userRepository.findManyPaginated).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        email: undefined,
+      });
     });
   });
 });

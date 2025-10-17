@@ -2,12 +2,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import * as swaggerUi from 'swagger-ui-express';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(cookieParser());
 
   app.use((req, res, next) => {
     const staticFiles = [
@@ -25,7 +28,6 @@ async function bootstrap() {
     const isStaticFile = staticFiles.some(file => req.path.startsWith(file));
 
     if (isStaticFile) {
-      console.log(`Static file request blocked: ${req.path}`);
       return res.status(404).json({
         statusCode: 404,
         message: 'Not Found',
@@ -73,17 +75,23 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  app.use('/swagger', swaggerUi.serve, swaggerUi.setup(document));
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(document));
 
-  SwaggerModule.setup('docs', app, document, {
+  SwaggerModule.setup('/api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },
   });
 
   const configService = app.get(ConfigService);
+
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Timezone-Val'],
+  });
   const port = configService.get('PORT', 3001);
-  
+
   await app.listen(port);
 }
 bootstrap();

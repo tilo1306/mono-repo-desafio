@@ -1,22 +1,49 @@
-import { config } from 'dotenv';
-import { TestDataSource } from './typeorm-test.config';
+import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
+import { AppModule } from '../src/app.module';
 
-config({ path: '.env.test' });
-
-jest.setTimeout(30000);
+export let app: INestApplication;
+export let dataSource: DataSource;
 
 beforeAll(async () => {
-  try {
-    await TestDataSource.initialize();
-    console.log('Test database connection established');
-    await TestDataSource.destroy();
-  } catch (error) {
-    console.error(
-      '❌ Failed to connect to test database:',
-      error instanceof Error ? error.message : String(error),
-    );
-    throw error;
+  const moduleFixture: TestingModule = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
+
+  app = moduleFixture.createNestApplication();
+  await app.init();
+
+  dataSource = app.get(DataSource);
+
+  await dataSource.runMigrations();
+});
+
+afterAll(async () => {
+  if (dataSource) {
+    await dataSource.destroy();
+  }
+  if (app) {
+    await app.close();
   }
 });
 
-afterAll(async () => {});
+beforeEach(async () => {
+  if (dataSource) {
+    try {
+      await dataSource.query('TRUNCATE TABLE users CASCADE');
+    } catch (error) {
+      console.warn('Could not truncate users table:', error.message);
+    }
+  }
+});
+
+afterEach(async () => {
+  if (dataSource) {
+    try {
+      await dataSource.query('TRUNCATE TABLE users CASCADE');
+    } catch (error) {
+      console.warn('Could not truncate users table:', error.message);
+    }
+  }
+});

@@ -13,7 +13,7 @@ import { AuthController } from './auth.controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
-            host: 'localhost',
+            host: configService.get('AUTH_SERVICE_HOST', 'auth-service'),
             port: configService.get('AUTH_SERVICE_PORT', 3002),
           },
         }),

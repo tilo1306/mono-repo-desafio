@@ -1,25 +1,32 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import ReactDOM from 'react-dom/client'
 
-import { routeTree } from './routeTree.gen'
+import { AuthProvider, useAuth } from './context/auth.tsx'
+import { router } from './router'
 
-const router = createRouter({ routeTree })
+import reportWebVitals from './reportWebVitals.ts'
+import './styles.css'
 
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router
-  }
+function InnerApp() {
+  const auth = useAuth()
+  return <RouterProvider router={router} context={{ auth }} />
 }
 
-const queryClient = new QueryClient()
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>
-)
+const rootElement = document.getElementById('app')
+if (rootElement && !rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement)
+  root.render(
+    <StrictMode>
+      <AuthProvider>
+        <InnerApp />
+      </AuthProvider>
+    </StrictMode>,
+  )
+}
+
+
+
+
+reportWebVitals()

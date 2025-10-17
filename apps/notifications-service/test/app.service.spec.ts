@@ -3,12 +3,11 @@ import { NotificationType } from '@repo/types';
 import { AppService } from '../src/app.service';
 import { NotificationConsumer } from '../src/consumers/notification.consumer';
 import { INotificationRepository } from '../src/repositories/notification.repository.interface';
-import { WebSocketService } from '../src/services/websocket.service';
+global.fetch = jest.fn();
 
 describe('Notifications Service', () => {
   let appService: AppService;
   let notificationRepository: jest.Mocked<INotificationRepository>;
-  let webSocketService: jest.Mocked<WebSocketService>;
   let notificationConsumer: NotificationConsumer;
 
   const mockNotification = {
@@ -42,13 +41,6 @@ describe('Notifications Service', () => {
       markAllAsRead: jest.fn(),
     };
 
-    const mockWebSocketService = {
-      deliverNotification: jest.fn(),
-      addClient: jest.fn(),
-      removeClient: jest.fn(),
-      isUserConnected: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppService,
@@ -57,18 +49,18 @@ describe('Notifications Service', () => {
           provide: 'INotificationRepository',
           useValue: mockNotificationRepository,
         },
-        {
-          provide: WebSocketService,
-          useValue: mockWebSocketService,
-        },
       ],
     }).compile();
 
     appService = module.get<AppService>(AppService);
     notificationRepository = module.get('INotificationRepository');
-    webSocketService = module.get(WebSocketService);
     notificationConsumer =
       module.get<NotificationConsumer>(NotificationConsumer);
+    (global.fetch as jest.Mock).mockClear();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('AppService', () => {
@@ -115,11 +107,14 @@ describe('Notifications Service', () => {
   });
 
   describe('NotificationConsumer', () => {
-    it('should process notification event and deliver via WebSocket', async () => {
+    it('should process notification event and send to API Gateway', async () => {
       notificationRepository.createNotification.mockResolvedValue(
         mockNotification,
       );
-      webSocketService.deliverNotification.mockResolvedValue();
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+      });
 
       await notificationConsumer.handleNotificationCreated(
         mockNotificationEvent,
@@ -128,9 +123,24 @@ describe('Notifications Service', () => {
       expect(notificationRepository.createNotification).toHaveBeenCalledWith(
         mockNotificationEvent,
       );
-      expect(webSocketService.deliverNotification).toHaveBeenCalledWith(
-        'user-1',
-        mockNotification,
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:3001/api/internal/websocket/emit',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: 'user-1',
+            notification: {
+              id: 'notification-1',
+              type: NotificationType.TASK_CREATED,
+              title: 'Test Notification',
+              message: 'Test message',
+              data: { taskId: 'task-1' },
+              isRead: false,
+              createdAt: mockNotification.createdAt,
+            },
+          }),
+        }),
       );
     });
 
@@ -141,36 +151,35 @@ describe('Notifications Service', () => {
       notificationRepository.createNotification.mockResolvedValue(
         globalNotification,
       );
-      webSocketService.deliverNotification.mockResolvedValue();
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+      });
 
       await notificationConsumer.handleNotificationCreated(globalEvent);
 
       expect(notificationRepository.createNotification).toHaveBeenCalledWith(
         globalEvent,
       );
-      expect(webSocketService.deliverNotification).toHaveBeenCalledWith(
-        'all',
-        globalNotification,
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:3001/api/internal/websocket/emit',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: 'all',
+            notification: {
+              id: 'notification-1',
+              type: NotificationType.TASK_CREATED,
+              title: 'Test Notification',
+              message: 'Test message',
+              data: { taskId: 'task-1' },
+              isRead: false,
+              createdAt: globalNotification.createdAt,
+            },
+          }),
+        }),
       );
-    });
-  });
-
-  describe('WebSocketService', () => {
-    it('should determine correct WebSocket event based on notification type', () => {
-      const service = new WebSocketService();
-
-      const testCases = [
-        { type: NotificationType.TASK_CREATED, expected: 'task:created' },
-        { type: NotificationType.TASK_UPDATED, expected: 'task:updated' },
-        { type: NotificationType.COMMENT_CREATED, expected: 'comment:new' },
-        { type: NotificationType.TASK_ASSIGNED, expected: 'notification' },
-      ];
-
-      testCases.forEach(({ type, expected }) => {
-        const notification = { ...mockNotification, type };
-        expect(type).toBeDefined();
-        expect(expected).toBeDefined();
-      });
     });
   });
 });

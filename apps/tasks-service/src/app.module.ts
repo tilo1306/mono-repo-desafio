@@ -27,17 +27,18 @@ import { NotificationPublisherService } from './services/notification-publisher.
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
+        host: configService.get('DB_HOST', 'db'),
         port: configService.get('DB_PORT', 5432),
         username: configService.get('DB_USERNAME', 'postgres'),
         password: configService.get('DB_PASSWORD', 'password'),
         database: configService.get('DB_NAME', 'challenge_db'),
         entities: [Task, User, Assignee, Comment, TaskHistory],
-        migrations: ['src/migrations/*.ts'],
+        migrations: ['dist/src/migrations/*.js'],
         migrationsRun: true,
         synchronize: false,
         logging: configService.get('NODE_ENV') === 'development',
       }),
+
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([Task, User, Assignee, Comment, TaskHistory]),
@@ -48,7 +49,12 @@ import { NotificationPublisherService } from './services/notification-publisher.
         useFactory: (configService: ConfigService) => ({
           transport: Transport.RMQ,
           options: {
-            urls: [configService.get('RABBITMQ_URL', 'amqp://admin:admin@localhost:5672')] as string[],
+            urls: [
+              configService.get(
+                'RABBITMQ_URL',
+                'amqp://admin:admin@localhost:5672',
+              ),
+            ] as string[],
             queue: 'notifications_queue',
             queueOptions: {
               durable: true,

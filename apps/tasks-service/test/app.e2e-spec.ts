@@ -1,260 +1,410 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
-import { AppService } from '../src/app.service';
-import { Assignee } from '../src/entities/assignee.entity';
-import { Comment } from '../src/entities/comment.entity';
-import { Task } from '../src/entities/task.entity';
-import { User } from '../src/entities/user.entity';
-import { TestAppModule } from './test-app.module';
+import { AppModule } from '../src/app.module';
 
-describe('Tasks Service E2E', () => {
+describe('Tasks Service E2E Tests', () => {
   let app: INestApplication;
-  let service: AppService;
   let dataSource: DataSource;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [TestAppModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    dataSource = moduleFixture.get<DataSource>(DataSource);
-    service = moduleFixture.get<AppService>(AppService);
-
     await app.init();
+
+    dataSource = app.get(DataSource);
   });
 
   afterAll(async () => {
     if (dataSource) {
-      try {
-        await dataSource.query('DELETE FROM comment');
-        await dataSource.query('DELETE FROM assignee');
-        await dataSource.query('DELETE FROM task');
-        await dataSource.query('DELETE FROM "user"');
-      } catch (error) {
-      }
+      await dataSource.destroy();
     }
     if (app) {
       await app.close();
     }
   });
 
-  describe('Database', () => {
-    it('should have clean database', async () => {
-      const userCount = await dataSource.getRepository(User).count();
-      const taskCount = await dataSource.getRepository(Task).count();
-      const assigneeCount = await dataSource.getRepository(Assignee).count();
-      const commentCount = await dataSource.getRepository(Comment).count();
-
-      expect(userCount).toBe(0);
-      expect(taskCount).toBe(0);
-      expect(assigneeCount).toBe(0);
-      expect(commentCount).toBe(0);
-    });
+  beforeEach(async () => {
+    if (dataSource) {
+      await dataSource.query('TRUNCATE TABLE comments CASCADE');
+      await dataSource.query('TRUNCATE TABLE assignees CASCADE');
+      await dataSource.query('TRUNCATE TABLE tasks CASCADE');
+    }
   });
 
-  describe('Task Creation Flow', () => {
-    it('should create task with assignees and publish notifications', async () => {
-      const creator = await dataSource.getRepository(User).save({
-        name: 'Creator User',
-        email: 'creator@example.com',
-        password: 'hashed-password',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const assignee = await dataSource.getRepository(User).save({
-        name: 'Assignee User',
-        email: 'assignee@example.com',
-        password: 'hashed-password',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const createTaskDto = {
-        title: 'E2E Test Task',
-        description: 'E2E Test Description',
-        userId: creator.id,
+  describe('Task Creation', () => {
+    it('should create a task successfully', async () => {
+      const taskData = {
+        userId: 'test-user-id',
+        title: 'Test Task',
+        description: 'This is a test task',
+        priority: 'HIGH',
+        status: 'TODO',
+        deadline: '2024-12-31T23:59:59.000Z',
         assigneeEmails: ['assignee@example.com'],
-        deadline: '2024-12-31',
-        priority: 'HIGH' as any,
-        status: 'TODO' as any,
       };
 
-      const result = await service.createTask(createTaskDto);
+      const response = await request(app.getHttpServer())
+        .post('/createTask')
+        .send(taskData)
+        .expect(201);
 
-      expect(result).toBeDefined();
-      expect(result.title).toBe('E2E Test Task');
-      expect(result.userId).toBe(creator.id);
-
-      const savedTask = await dataSource.getRepository(Task).findOne({
-        where: { id: result.id },
-        relations: ['assignees', 'comments'],
-      });
-      expect(savedTask).toBeDefined();
-      expect(savedTask?.title).toBe('E2E Test Task');
-
-      const savedAssignee = await dataSource.getRepository(Assignee).findOne({
-        where: { taskId: result.id, userId: assignee.id },
-      });
-      expect(savedAssignee).toBeDefined();
+      expect(response.body.success).toBe(true);
+      expect(response.body.task).toBeDefined();
+      expect(response.body.task.title).toBe(taskData.title);
+      expect(response.body.task.description).toBe(taskData.description);
+      expect(response.body.task.priority).toBe(taskData.priority);
+      expect(response.body.task.status).toBe(taskData.status);
     });
-  });
 
-  describe('Task Update Flow', () => {
-    it('should update task and publish notification', async () => {
-      const user = await dataSource.getRepository(User).save({
-        name: 'Test User',
-        email: 'user@example.com',
-        password: 'hashed-password',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const task = await dataSource.getRepository(Task).save({
-        title: 'Original Task',
-        description: 'Original Description',
-        userId: user.id,
-        priority: 'LOW' as any,
-        status: 'TODO' as any,
-        assignees: [],
-        comments: [],
-        history: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const updates = {
-        title: 'Updated E2E Task',
-        status: 'IN_PROGRESS' as any,
+    it('should create a task without assignees', async () => {
+      const taskData = {
+        userId: 'test-user-id',
+        title: 'Solo Task',
+        description: 'This is a solo task',
+        priority: 'MEDIUM',
+        status: 'TODO',
+        deadline: '2024-12-31T23:59:59.000Z',
+        assigneeEmails: [],
       };
 
-      const result = await service.updateTask(task.id, user.id, updates);
+      const response = await request(app.getHttpServer())
+        .post('/createTask')
+        .send(taskData)
+        .expect(201);
 
-      expect(result).toBeDefined();
-      expect(result.title).toBe('Updated E2E Task');
-      expect(result.status).toBe('IN_PROGRESS');
+      expect(response.body.success).toBe(true);
+      expect(response.body.task.title).toBe(taskData.title);
+    });
 
-      const updatedTask = await dataSource.getRepository(Task).findOne({
-        where: { id: task.id },
-      });
-      expect(updatedTask?.title).toBe('Updated E2E Task');
-      expect(updatedTask?.status).toBe('IN_PROGRESS');
+    it('should validate required fields', async () => {
+      await request(app.getHttpServer())
+        .post('/createTask')
+        .send({
+          userId: 'test-user-id',
+          title: '',
+          description: '',
+          priority: 'INVALID',
+          status: 'INVALID',
+        })
+        .expect(400);
     });
   });
 
-  describe('Comment Flow', () => {
-    it('should add comment and publish notification', async () => {
-      const user = await dataSource.getRepository(User).save({
-        name: 'Commenter User',
-        email: 'commenter@example.com',
-        password: 'hashed-password',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+  describe('Task Retrieval', () => {
+    let taskId: string;
 
-      const task = await dataSource.getRepository(Task).save({
-        title: 'Comment Task',
-        description: 'Task for commenting',
-        userId: user.id,
-        priority: 'MEDIUM' as any,
-        status: 'TODO' as any,
-        assignees: [],
-        comments: [],
-        history: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+    beforeEach(async () => {
+      const taskData = {
+        userId: 'test-user-id',
+        title: 'Retrieval Test Task',
+        description: 'This task will be retrieved',
+        priority: 'LOW',
+        status: 'TODO',
+        deadline: '2024-12-31T23:59:59.000Z',
+        assigneeEmails: [],
+      };
 
-      const result = await service.addComment(task.id, user.id, 'New comment');
+      const response = await request(app.getHttpServer())
+        .post('/createTask')
+        .send(taskData);
 
-      expect(result).toBeDefined();
-      expect(result.content).toBe('New comment');
-      expect(result.taskId).toBe(task.id);
-      expect(result.authorId).toBe(user.id);
+      taskId = response.body.task.id;
+    });
 
-      const savedComment = await dataSource.getRepository(Comment).findOne({
-        where: { id: result.id },
-        relations: ['task'],
-      });
-      expect(savedComment).toBeDefined();
-      expect(savedComment?.content).toBe('New comment');
+    it('should get task by ID', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/getTask')
+        .send({
+          userId: 'test-user-id',
+          taskId: taskId,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.task).toBeDefined();
+      expect(response.body.task.id).toBe(taskId);
+      expect(response.body.task.title).toBe('Retrieval Test Task');
+    });
+
+    it('should return 404 for non-existent task', async () => {
+      await request(app.getHttpServer())
+        .post('/getTask')
+        .send({
+          userId: 'test-user-id',
+          taskId: 'non-existent-id',
+        })
+        .expect(404);
+    });
+
+    it('should get tasks with pagination', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/getTasks')
+        .send({
+          userId: 'test-user-id',
+          page: 1,
+          size: 10,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.total).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should filter tasks by priority', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/getTasks')
+        .send({
+          userId: 'test-user-id',
+          page: 1,
+          size: 10,
+          priority: 'LOW',
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data[0].priority).toBe('LOW');
+    });
+
+    it('should filter tasks by status', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/getTasks')
+        .send({
+          userId: 'test-user-id',
+          page: 1,
+          size: 10,
+          status: 'TODO',
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data[0].status).toBe('TODO');
+    });
+
+    it('should search tasks by text', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/getTasks')
+        .send({
+          userId: 'test-user-id',
+          page: 1,
+          size: 10,
+          q: 'Retrieval',
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data[0].title).toContain('Retrieval');
     });
   });
 
-  describe('Pagination Flow', () => {
-    it('should return paginated tasks', async () => {
-      const user = await dataSource.getRepository(User).save({
-        name: 'Paginated User',
-        email: 'paginated@example.com',
-        password: 'hashed-password',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+  describe('Task Updates', () => {
+    let taskId: string;
 
-      for (let i = 1; i <= 3; i++) {
-        await dataSource.getRepository(Task).save({
-          title: `Task ${i}`,
-          description: `Description ${i}`,
-          userId: user.id,
-          priority: 'MEDIUM' as any,
-          status: 'TODO' as any,
-          assignees: [],
-          comments: [],
-          history: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      }
+    beforeEach(async () => {
+      const taskData = {
+        userId: 'test-user-id',
+        title: 'Update Test Task',
+        description: 'This task will be updated',
+        priority: 'MEDIUM',
+        status: 'TODO',
+        deadline: '2024-12-31T23:59:59.000Z',
+        assigneeEmails: [],
+      };
 
-      const result = await service.getTasks(user.id, 1, 2);
+      const response = await request(app.getHttpServer())
+        .post('/createTask')
+        .send(taskData);
 
-      expect(result).toBeDefined();
-      expect(result.data).toHaveLength(2);
-      expect(result.total).toBe(3);
-      expect(result.page).toBe(1);
-      expect(result.size).toBe(2);
+      taskId = response.body.task.id;
     });
 
-    it('should return paginated comments', async () => {
-      const user = await dataSource.getRepository(User).save({
-        name: 'Comment Paginated User',
-        email: 'commentpaginated@example.com',
-        password: 'hashed-password',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+    it('should update task successfully', async () => {
+      const updateData = {
+        userId: 'test-user-id',
+        taskId: taskId,
+        updates: {
+          title: 'Updated Task Title',
+          description: 'Updated task description',
+          status: 'IN_PROGRESS',
+          priority: 'HIGH',
+        },
+      };
 
-      const task = await dataSource.getRepository(Task).save({
-        title: 'Comment Pagination Task',
-        description: 'Task for comment pagination',
-        userId: user.id,
-        priority: 'MEDIUM' as any,
-        status: 'TODO' as any,
-        assignees: [],
-        comments: [],
-        history: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const response = await request(app.getHttpServer())
+        .post('/updateTask')
+        .send(updateData)
+        .expect(200);
 
-      for (let i = 1; i <= 3; i++) {
-        await dataSource.getRepository(Comment).save({
-          taskId: task.id,
-          authorId: user.id,
-          content: `Comment ${i}`,
-          createdAt: new Date(),
-        });
-      }
+      expect(response.body.success).toBe(true);
+      expect(response.body.task).toBeDefined();
+      expect(response.body.task.title).toBe('Updated Task Title');
+      expect(response.body.task.status).toBe('IN_PROGRESS');
+      expect(response.body.task.priority).toBe('HIGH');
+    });
 
-      const result = await service.getComments(task.id, user.id, 1, 2);
+    it('should return 404 for non-existent task update', async () => {
+      const updateData = {
+        userId: 'test-user-id',
+        taskId: 'non-existent-id',
+        updates: {
+          title: 'Updated Title',
+        },
+      };
 
-      expect(result).toBeDefined();
-      expect(result.data).toHaveLength(2);
-      expect(result.total).toBe(3);
-      expect(result.page).toBe(1);
-      expect(result.size).toBe(2);
+      await request(app.getHttpServer())
+        .post('/updateTask')
+        .send(updateData)
+        .expect(404);
+    });
+  });
+
+  describe('Task Deletion', () => {
+    let taskId: string;
+
+    beforeEach(async () => {
+      const taskData = {
+        userId: 'test-user-id',
+        title: 'Delete Test Task',
+        description: 'This task will be deleted',
+        priority: 'LOW',
+        status: 'TODO',
+        deadline: '2024-12-31T23:59:59.000Z',
+        assigneeEmails: [],
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/createTask')
+        .send(taskData);
+
+      taskId = response.body.task.id;
+    });
+
+    it('should delete task successfully', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/deleteTask')
+        .send({
+          userId: 'test-user-id',
+          taskId: taskId,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      await request(app.getHttpServer())
+        .post('/getTask')
+        .send({
+          userId: 'test-user-id',
+          taskId: taskId,
+        })
+        .expect(404);
+    });
+
+    it('should return 404 for non-existent task deletion', async () => {
+      await request(app.getHttpServer())
+        .post('/deleteTask')
+        .send({
+          userId: 'test-user-id',
+          taskId: 'non-existent-id',
+        })
+        .expect(404);
+    });
+  });
+
+  describe('Comments', () => {
+    let taskId: string;
+
+    beforeEach(async () => {
+      const taskData = {
+        userId: 'test-user-id',
+        title: 'Comment Test Task',
+        description: 'This task will have comments',
+        priority: 'MEDIUM',
+        status: 'TODO',
+        deadline: '2024-12-31T23:59:59.000Z',
+        assigneeEmails: [],
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/createTask')
+        .send(taskData);
+
+      taskId = response.body.task.id;
+    });
+
+    it('should add comment successfully', async () => {
+      const commentData = {
+        userId: 'test-user-id',
+        taskId: taskId,
+        content: 'This is a test comment',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/addComment')
+        .send(commentData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.comment).toBeDefined();
+      expect(response.body.comment.content).toBe(commentData.content);
+      expect(response.body.comment.taskId).toBe(taskId);
+    });
+
+    it('should get comments for a task', async () => {
+      const commentData = {
+        userId: 'test-user-id',
+        taskId: taskId,
+        content: 'This is a test comment',
+      };
+
+      await request(app.getHttpServer()).post('/addComment').send(commentData);
+
+      const response = await request(app.getHttpServer())
+        .post('/getComments')
+        .send({
+          userId: 'test-user-id',
+          taskId: taskId,
+          page: 1,
+          size: 10,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should return 404 for comments on non-existent task', async () => {
+      await request(app.getHttpServer())
+        .post('/addComment')
+        .send({
+          userId: 'test-user-id',
+          taskId: 'non-existent-id',
+          content: 'This comment should fail',
+        })
+        .expect(404);
+    });
+  });
+
+  describe('Health Check', () => {
+    it('should return health status', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/health')
+        .expect(200);
+
+      expect(response.body.status).toBe('up');
     });
   });
 });

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { NotificationWebSocketGateway } from '../../gateways/notification-websocket.gateway';
 import { NotificationController } from './notification.controller';
 
 @Module({
@@ -12,7 +13,10 @@ import { NotificationController } from './notification.controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
-            host: 'localhost',
+            host: configService.get(
+              'NOTIFICATIONS_SERVICE_HOST',
+              'notifications-service',
+            ),
             port: configService.get('NOTIFICATIONS_SERVICE_TCP_PORT', 3005),
           },
         }),
@@ -21,7 +25,7 @@ import { NotificationController } from './notification.controller';
     ]),
   ],
   controllers: [NotificationController],
-  providers: [],
-  exports: [ClientsModule],
+  providers: [NotificationWebSocketGateway],
+  exports: [ClientsModule, NotificationWebSocketGateway],
 })
 export class NotificationModule {}

@@ -8,6 +8,7 @@
     "paths": { "@/*": ["*"] },
     "incremental": true,
     "strictNullChecks": true,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "isolatedModules": true
   }
 }

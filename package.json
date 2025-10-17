@@ -12,7 +12,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "test:unit": "turbo run test:unit",
+    "test:backend": "turbo run test --filter='./apps/api-gateway' --filter='./apps/auth-service' --filter='./apps/tasks-service' --filter='./apps/notifications-service'",
+    "test:frontend": "turbo run test --filter='./apps/web'",
     "test:e2e": "turbo run test:e2e",
     "test:cov": "turbo run test:cov",
     "clean": "turbo run clean",
@@ -20,6 +21,7 @@
     "migration:run": "turbo run migration:run",
     "migration:generate": "turbo run migration:generate",
     "migration:revert": "turbo run migration:revert",
+    "migration:test:run": "turbo run db:test:migrate",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
@@ -37,5 +39,8 @@
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  }
 }

@@ -13,7 +13,7 @@ import { TaskController } from './task.controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
-            host: 'localhost',
+            host: configService.get('TASKS_SERVICE_HOST', 'tasks-service'),
             port: configService.get('TASKS_SERVICE_PORT', 3003),
           },
         }),

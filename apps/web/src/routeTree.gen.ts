@@ -9,68 +9,319 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as AuthIndexRouteImport } from './routes/_auth/index'
+import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
+import { Route as AuthHealthIndexRouteImport } from './routes/_auth/health/index'
+import { Route as AuthCadastroIndexRouteImport } from './routes/_auth/cadastro/index'
+import { Route as AppDashboardIndexRouteImport } from './routes/_app/dashboard/index'
+import { Route as AppDashboardUsuariosIndexRouteImport } from './routes/_app/dashboard/usuarios/index'
+import { Route as AppDashboardTabelaIndexRouteImport } from './routes/_app/dashboard/tabela/index'
+import { Route as AppDashboardReportsIndexRouteImport } from './routes/_app/dashboard/reports/index'
+import { Route as AppDashboardPerfilIndexRouteImport } from './routes/_app/dashboard/perfil/index'
+import { Route as AppDashboardKabanIndexRouteImport } from './routes/_app/dashboard/kaban/index'
+import { Route as AppDashboardHealthIndexRouteImport } from './routes/_app/dashboard/health/index'
 
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/_app/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthHealthIndexRoute = AuthHealthIndexRouteImport.update({
+  id: '/health/',
+  path: '/health/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCadastroIndexRoute = AuthCadastroIndexRouteImport.update({
+  id: '/cadastro/',
+  path: '/cadastro/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AppDashboardIndexRoute = AppDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppDashboardRoute,
+} as any)
+const AppDashboardUsuariosIndexRoute =
+  AppDashboardUsuariosIndexRouteImport.update({
+    id: '/usuarios/',
+    path: '/usuarios/',
+    getParentRoute: () => AppDashboardRoute,
+  } as any)
+const AppDashboardTabelaIndexRoute = AppDashboardTabelaIndexRouteImport.update({
+  id: '/tabela/',
+  path: '/tabela/',
+  getParentRoute: () => AppDashboardRoute,
+} as any)
+const AppDashboardReportsIndexRoute =
+  AppDashboardReportsIndexRouteImport.update({
+    id: '/reports/',
+    path: '/reports/',
+    getParentRoute: () => AppDashboardRoute,
+  } as any)
+const AppDashboardPerfilIndexRoute = AppDashboardPerfilIndexRouteImport.update({
+  id: '/perfil/',
+  path: '/perfil/',
+  getParentRoute: () => AppDashboardRoute,
+} as any)
+const AppDashboardKabanIndexRoute = AppDashboardKabanIndexRouteImport.update({
+  id: '/kaban/',
+  path: '/kaban/',
+  getParentRoute: () => AppDashboardRoute,
+} as any)
+const AppDashboardHealthIndexRoute = AppDashboardHealthIndexRouteImport.update({
+  id: '/health/',
+  path: '/health/',
+  getParentRoute: () => AppDashboardRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/dashboard': typeof AppDashboardRouteWithChildren
+  '/': typeof AuthIndexRoute
+  '/dashboard/': typeof AppDashboardIndexRoute
+  '/cadastro': typeof AuthCadastroIndexRoute
+  '/health': typeof AuthHealthIndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/dashboard/health': typeof AppDashboardHealthIndexRoute
+  '/dashboard/kaban': typeof AppDashboardKabanIndexRoute
+  '/dashboard/perfil': typeof AppDashboardPerfilIndexRoute
+  '/dashboard/reports': typeof AppDashboardReportsIndexRoute
+  '/dashboard/tabela': typeof AppDashboardTabelaIndexRoute
+  '/dashboard/usuarios': typeof AppDashboardUsuariosIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/': typeof AuthIndexRoute
+  '/dashboard': typeof AppDashboardIndexRoute
+  '/cadastro': typeof AuthCadastroIndexRoute
+  '/health': typeof AuthHealthIndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/dashboard/health': typeof AppDashboardHealthIndexRoute
+  '/dashboard/kaban': typeof AppDashboardKabanIndexRoute
+  '/dashboard/perfil': typeof AppDashboardPerfilIndexRoute
+  '/dashboard/reports': typeof AppDashboardReportsIndexRoute
+  '/dashboard/tabela': typeof AppDashboardTabelaIndexRoute
+  '/dashboard/usuarios': typeof AppDashboardUsuariosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/_app/dashboard': typeof AppDashboardRouteWithChildren
+  '/_auth/': typeof AuthIndexRoute
+  '/_app/dashboard/': typeof AppDashboardIndexRoute
+  '/_auth/cadastro/': typeof AuthCadastroIndexRoute
+  '/_auth/health/': typeof AuthHealthIndexRoute
+  '/_auth/login/': typeof AuthLoginIndexRoute
+  '/_app/dashboard/health/': typeof AppDashboardHealthIndexRoute
+  '/_app/dashboard/kaban/': typeof AppDashboardKabanIndexRoute
+  '/_app/dashboard/perfil/': typeof AppDashboardPerfilIndexRoute
+  '/_app/dashboard/reports/': typeof AppDashboardReportsIndexRoute
+  '/_app/dashboard/tabela/': typeof AppDashboardTabelaIndexRoute
+  '/_app/dashboard/usuarios/': typeof AppDashboardUsuariosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about'
+  fullPaths:
+    | '/dashboard'
+    | '/'
+    | '/dashboard/'
+    | '/cadastro'
+    | '/health'
+    | '/login'
+    | '/dashboard/health'
+    | '/dashboard/kaban'
+    | '/dashboard/perfil'
+    | '/dashboard/reports'
+    | '/dashboard/tabela'
+    | '/dashboard/usuarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about'
-  id: '__root__' | '/' | '/about'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/cadastro'
+    | '/health'
+    | '/login'
+    | '/dashboard/health'
+    | '/dashboard/kaban'
+    | '/dashboard/perfil'
+    | '/dashboard/reports'
+    | '/dashboard/tabela'
+    | '/dashboard/usuarios'
+  id:
+    | '__root__'
+    | '/_auth'
+    | '/_app/dashboard'
+    | '/_auth/'
+    | '/_app/dashboard/'
+    | '/_auth/cadastro/'
+    | '/_auth/health/'
+    | '/_auth/login/'
+    | '/_app/dashboard/health/'
+    | '/_app/dashboard/kaban/'
+    | '/_app/dashboard/perfil/'
+    | '/_app/dashboard/reports/'
+    | '/_app/dashboard/tabela/'
+    | '/_app/dashboard/usuarios/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  AppDashboardRoute: typeof AppDashboardRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_auth/': {
+      id: '/_auth/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/login/': {
+      id: '/_auth/login/'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/health/': {
+      id: '/_auth/health/'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof AuthHealthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/cadastro/': {
+      id: '/_auth/cadastro/'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof AuthCadastroIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_app/dashboard/': {
+      id: '/_app/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AppDashboardIndexRouteImport
+      parentRoute: typeof AppDashboardRoute
+    }
+    '/_app/dashboard/usuarios/': {
+      id: '/_app/dashboard/usuarios/'
+      path: '/usuarios'
+      fullPath: '/dashboard/usuarios'
+      preLoaderRoute: typeof AppDashboardUsuariosIndexRouteImport
+      parentRoute: typeof AppDashboardRoute
+    }
+    '/_app/dashboard/tabela/': {
+      id: '/_app/dashboard/tabela/'
+      path: '/tabela'
+      fullPath: '/dashboard/tabela'
+      preLoaderRoute: typeof AppDashboardTabelaIndexRouteImport
+      parentRoute: typeof AppDashboardRoute
+    }
+    '/_app/dashboard/reports/': {
+      id: '/_app/dashboard/reports/'
+      path: '/reports'
+      fullPath: '/dashboard/reports'
+      preLoaderRoute: typeof AppDashboardReportsIndexRouteImport
+      parentRoute: typeof AppDashboardRoute
+    }
+    '/_app/dashboard/perfil/': {
+      id: '/_app/dashboard/perfil/'
+      path: '/perfil'
+      fullPath: '/dashboard/perfil'
+      preLoaderRoute: typeof AppDashboardPerfilIndexRouteImport
+      parentRoute: typeof AppDashboardRoute
+    }
+    '/_app/dashboard/kaban/': {
+      id: '/_app/dashboard/kaban/'
+      path: '/kaban'
+      fullPath: '/dashboard/kaban'
+      preLoaderRoute: typeof AppDashboardKabanIndexRouteImport
+      parentRoute: typeof AppDashboardRoute
+    }
+    '/_app/dashboard/health/': {
+      id: '/_app/dashboard/health/'
+      path: '/health'
+      fullPath: '/dashboard/health'
+      preLoaderRoute: typeof AppDashboardHealthIndexRouteImport
+      parentRoute: typeof AppDashboardRoute
     }
   }
 }
 
+interface AuthRouteChildren {
+  AuthIndexRoute: typeof AuthIndexRoute
+  AuthCadastroIndexRoute: typeof AuthCadastroIndexRoute
+  AuthHealthIndexRoute: typeof AuthHealthIndexRoute
+  AuthLoginIndexRoute: typeof AuthLoginIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthIndexRoute: AuthIndexRoute,
+  AuthCadastroIndexRoute: AuthCadastroIndexRoute,
+  AuthHealthIndexRoute: AuthHealthIndexRoute,
+  AuthLoginIndexRoute: AuthLoginIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface AppDashboardRouteChildren {
+  AppDashboardIndexRoute: typeof AppDashboardIndexRoute
+  AppDashboardHealthIndexRoute: typeof AppDashboardHealthIndexRoute
+  AppDashboardKabanIndexRoute: typeof AppDashboardKabanIndexRoute
+  AppDashboardPerfilIndexRoute: typeof AppDashboardPerfilIndexRoute
+  AppDashboardReportsIndexRoute: typeof AppDashboardReportsIndexRoute
+  AppDashboardTabelaIndexRoute: typeof AppDashboardTabelaIndexRoute
+  AppDashboardUsuariosIndexRoute: typeof AppDashboardUsuariosIndexRoute
+}
+
+const AppDashboardRouteChildren: AppDashboardRouteChildren = {
+  AppDashboardIndexRoute: AppDashboardIndexRoute,
+  AppDashboardHealthIndexRoute: AppDashboardHealthIndexRoute,
+  AppDashboardKabanIndexRoute: AppDashboardKabanIndexRoute,
+  AppDashboardPerfilIndexRoute: AppDashboardPerfilIndexRoute,
+  AppDashboardReportsIndexRoute: AppDashboardReportsIndexRoute,
+  AppDashboardTabelaIndexRoute: AppDashboardTabelaIndexRoute,
+  AppDashboardUsuariosIndexRoute: AppDashboardUsuariosIndexRoute,
+}
+
+const AppDashboardRouteWithChildren = AppDashboardRoute._addFileChildren(
+  AppDashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
+  AuthRoute: AuthRouteWithChildren,
+  AppDashboardRoute: AppDashboardRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

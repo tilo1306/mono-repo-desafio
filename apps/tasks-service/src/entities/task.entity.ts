@@ -21,6 +21,10 @@ export class Task {
   @Column({ type: 'uuid' })
   userId: string;
 
+  @Index()
+  @Column({ type: 'uuid', name: 'createdById' })
+  createdById: string;
+
   @Column({ length: 180 })
   title: string;
 

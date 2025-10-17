@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('API Gateway (e2e)', () => {
@@ -300,6 +300,232 @@ describe('API Gateway (e2e)', () => {
 
     it('should return 404 for non-existent routes', () => {
       return request(app.getHttpServer()).get('/api/non-existent').expect(404);
+    });
+  });
+
+  describe('Users List', () => {
+    let accessToken: string;
+
+    beforeEach(async () => {
+      
+      await request(app.getHttpServer()).post('/api/auth/register').send({
+        email: 'user1@example.com',
+        password: 'Password@123',
+        name: 'User One',
+      });
+
+      await request(app.getHttpServer()).post('/api/auth/register').send({
+        email: 'user2@example.com',
+        password: 'Password@123',
+        name: 'User Two',
+      });
+
+      await request(app.getHttpServer()).post('/api/auth/register').send({
+        email: 'user3@example.com',
+        password: 'Password@123',
+        name: 'User Three',
+      });
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({
+          email: 'user1@example.com',
+          password: 'Password@123',
+        });
+
+      accessToken = loginResponse.body.accessToken;
+    });
+
+    it('/api/auth/users (GET) - should return paginated list of users', () => {
+      return request(app.getHttpServer())
+        .get('/api/auth/users?page=1&limit=10')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200)
+        .expect(res => {
+          expect(res.body).toBeDefined();
+          expect(res.body).toHaveProperty('data');
+          expect(res.body).toHaveProperty('meta');
+          expect(Array.isArray(res.body.data)).toBe(true);
+          expect(res.body.data.length).toBeGreaterThanOrEqual(3);
+          
+          expect(res.body.meta).toHaveProperty('page', 1);
+          expect(res.body.meta).toHaveProperty('limit', 10);
+          expect(res.body.meta).toHaveProperty('total');
+          expect(res.body.meta).toHaveProperty('totalPages');
+          expect(res.body.meta).toHaveProperty('hasNext');
+          expect(res.body.meta).toHaveProperty('hasPrev');
+          
+          res.body.data.forEach((user: any) => {
+            expect(user).toHaveProperty('name');
+            expect(user).toHaveProperty('email');
+            expect(user).toHaveProperty('avatar');
+            expect(user).not.toHaveProperty('password');
+            expect(user).not.toHaveProperty('id');
+            expect(user).not.toHaveProperty('createdAt');
+            expect(user).not.toHaveProperty('updatedAt');
+          });
+
+          const userNames = res.body.data.map((user: any) => user.name);
+          expect(userNames).toContain('User One');
+          expect(userNames).toContain('User Two');
+          expect(userNames).toContain('User Three');
+        });
+    });
+
+    it('/api/auth/users (GET) - should filter users by email', () => {
+      return request(app.getHttpServer())
+        .get('/api/auth/users?email=user1')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200)
+        .expect(res => {
+          expect(res.body).toBeDefined();
+          expect(res.body).toHaveProperty('data');
+          expect(res.body).toHaveProperty('meta');
+          expect(Array.isArray(res.body.data)).toBe(true);
+          
+          res.body.data.forEach((user: any) => {
+            expect(user.email).toContain('user1');
+          });
+        });
+    });
+
+    it('/api/auth/users (GET) - should handle pagination correctly', () => {
+      return request(app.getHttpServer())
+        .get('/api/auth/users?page=1&limit=2')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200)
+        .expect(res => {
+          expect(res.body).toBeDefined();
+          expect(res.body.data.length).toBeLessThanOrEqual(2);
+          expect(res.body.meta.page).toBe(1);
+          expect(res.body.meta.limit).toBe(2);
+        });
+    });
+
+    it('/api/auth/users (GET) - should require authentication', () => {
+      return request(app.getHttpServer())
+        .get('/api/auth/users')
+        .expect(401);
+    });
+
+    it('/api/auth/users (GET) - should work with valid token', () => {
+      return request(app.getHttpServer())
+        .get('/api/auth/users')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200)
+        .expect(res => {
+          expect(Array.isArray(res.body)).toBe(true);
+        });
+    });
+  });
+
+  describe('Password Update', () => {
+    let accessToken: string;
+
+    beforeEach(async () => {
+      const registerData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'password123',
+      };
+
+      await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send(registerData)
+        .expect(201);
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({
+          email: registerData.email,
+          password: registerData.password,
+        })
+        .expect(200);
+
+      accessToken = loginResponse.body.accessToken;
+    });
+
+    it('/api/auth/password (POST) - should require authentication', () => {
+      return request(app.getHttpServer())
+        .post('/api/auth/password')
+        .send({
+          password: 'password123',
+          newPassword: 'newPassword456',
+        })
+        .expect(401);
+    });
+
+    it('/api/auth/password (POST) - should update password successfully', () => {
+      return request(app.getHttpServer())
+        .post('/api/auth/password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          password: 'password123',
+          newPassword: 'newPassword456',
+        })
+        .expect(200);
+    });
+
+    it('/api/auth/password (POST) - should reject invalid current password', () => {
+      return request(app.getHttpServer())
+        .post('/api/auth/password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          password: 'wrongPassword',
+          newPassword: 'newPassword456',
+        })
+        .expect(401);
+    });
+
+    it('/api/auth/password (POST) - should validate required fields', () => {
+      return request(app.getHttpServer())
+        .post('/api/auth/password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          password: 'password123',
+        })
+        .expect(400);
+    });
+
+    it('/api/auth/password (POST) - should work with new password after update', async () => {
+      await request(app.getHttpServer())
+        .post('/api/auth/password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          password: 'password123',
+          newPassword: 'newPassword456',
+        })
+        .expect(200);
+
+      return request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({
+          email: 'test@example.com',
+          password: 'newPassword456',
+        })
+        .expect(200)
+        .expect(res => {
+          expect(res.body).toHaveProperty('accessToken');
+          expect(res.body).toHaveProperty('refreshToken');
+        });
+    });
+
+    it('/api/auth/password (POST) - should not work with old password after update', async () => {
+      await request(app.getHttpServer())
+        .post('/api/auth/password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          password: 'password123',
+          newPassword: 'newPassword456',
+        })
+        .expect(200);
+
+      return request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({
+          email: 'test@example.com',
+          password: 'password123',
+        })
+        .expect(401);
     });
   });
 });

@@ -9,6 +9,10 @@ import { RequestRegisterUserDTO } from './dtos/request/request-register.dto';
 import { RequestRefreshTokenDTO } from './dtos/request/request-refresh-token.dto';
 import { ResponseRefreshTokenDTO } from './dtos/response/response-refresh-token.dto';
 import { ResponseGetProfileDTO } from './dtos/response/response-get-profile.dto';
+import { RequestUsersDTO } from './dtos/request/request-users.dto';
+import { ResponseUsersPaginatedDTO } from './dtos/response/response-users-paginated.dto';
+import { ResponseUpdateAvatarDTO } from './dtos/response/response-update-avatar.dto';
+import { RequestUpdatePasswordDTO } from './dtos/request/request-update-password.dto';
 
 @Controller()
 export class AppController {
@@ -39,9 +43,22 @@ export class AppController {
   }
 
   @MessagePattern('uploadAvatar')
-  async uploadAvatar(@Payload() data: { userId: string; file: any }): Promise<string> {
+  async uploadAvatar(@Payload() data: { userId: string; file: any }): Promise<ResponseUpdateAvatarDTO> {
     return await this.appService.avatar(data.userId, data.file);
   }
+  
+  @MessagePattern('users')
+  async users(@Payload() requestUsersDTO: RequestUsersDTO): Promise<ResponseUsersPaginatedDTO> {
+    return await this.appService.users(requestUsersDTO);
+  }
+
+  @MessagePattern('updatePassword')
+  async updatePassword(@Payload() data: { userId: string; requestUpdatePasswordDTO: RequestUpdatePasswordDTO }): Promise<{ success: boolean; message: string }> {
+    await this.appService.updatePassword(data.userId, data.requestUpdatePasswordDTO);
+    return { success: true, message: 'Password updated successfully' };
+  }
+
+
   @MessagePattern('health')
   async health(): Promise<{ status: string }> {
     return { status: 'up' };

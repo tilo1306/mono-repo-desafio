@@ -10,15 +10,15 @@ async function bootstrap() {
     {
       transport: Transport.TCP,
       options: {
-        host: 'localhost',
+        host: '0.0.0.0',
         port: 3003,
       },
     },
   );
-  
+
   const configService = app.get(ConfigService);
   const port = configService.get('PORT', 3003);
-  
+
   await app.listen();
   Logger.log(`Tasks Service is running on port ${port}`);
 }

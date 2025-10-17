@@ -1,3 +1,42 @@
+# VCS
+.git
+.gitignore
+
+# Package managers / stores / logs
+node_modules
+**/node_modules
+.pnpm-store
+pnpm-store
+.pnpm-debug.log
+npm-debug.log
+
+# Build artifacts
+.dist
+**/dist
+coverage
+**/coverage
+.turbo
+.next
+.cache
+
+# OS/editor junk
+.DS_Store
+**/.DS_Store
+.vscode
+.idea
+
+# Local assets not needed in build context
+shared/uploads
+**/uploads
+
+# Docker
+Dockerfile
+**/Dockerfile
+
+# Tests
+**/jest-*.json
+**/jest.config.*
+**/vitest.config.*
 node_modules
 npm-debug.log
 .git

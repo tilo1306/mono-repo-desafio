@@ -19,6 +19,8 @@ describe('AppController', () => {
       refreshToken: jest.fn(),
       profile: jest.fn(),
       avatar: jest.fn(),
+      users: jest.fn(),
+      updatePassword: jest.fn().mockResolvedValue({ success: true, message: 'Password updated successfully' }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -88,7 +90,7 @@ describe('AppController', () => {
         buffer: Buffer.from('fake-image-data'),
       };
       const mockData = { userId, file: mockFile };
-      const mockResponse = '/api/auth/avatar/123/1640995200000-123.jpg';
+      const mockResponse = { avatarUrl: '/api/auth/avatar/123/1640995200000-123.jpg' };
       service.avatar.mockResolvedValue(mockResponse);
 
       const result = await controller.uploadAvatar(mockData);
@@ -96,6 +98,87 @@ describe('AppController', () => {
       expect(service.avatar).toHaveBeenCalledWith(userId, mockFile);
       expect(service.avatar).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('users', () => {
+    it('should call appService.users with correct parameters', async () => {
+      const mockRequestUsersDTO = {
+        page: 1,
+        limit: 10,
+        email: 'test@example.com',
+      };
+
+      const mockResponse = {
+        data: [
+          {
+            name: 'João Silva',
+            email: 'joao@example.com',
+            avatar: 'https://robohash.org/joao@example.com',
+          },
+        ],
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+      };
+
+      service.users.mockResolvedValue(mockResponse);
+
+      const result = await controller.users(mockRequestUsersDTO);
+
+      expect(service.users).toHaveBeenCalledWith(mockRequestUsersDTO);
+      expect(service.users).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should propagate errors from appService', async () => {
+      const mockRequestUsersDTO = {
+        page: 1,
+        limit: 10,
+      };
+
+      const error = new Error('Service error');
+      service.users.mockRejectedValue(error);
+
+      await expect(controller.users(mockRequestUsersDTO)).rejects.toThrow(error);
+      expect(service.users).toHaveBeenCalledWith(mockRequestUsersDTO);
+    });
+  });
+
+  describe('updatePassword', () => {
+    it('should call appService.updatePassword with correct parameters', async () => {
+      const userId = '123e4567-e89b-12d3-a456-426614174000';
+      const mockUpdatePasswordDTO = {
+        password: 'currentPassword123',
+        newPassword: 'newPassword123',
+      };
+      const mockData = { userId, requestUpdatePasswordDTO: mockUpdatePasswordDTO };
+      
+      const result = await controller.updatePassword(mockData);
+
+      expect(service.updatePassword).toHaveBeenCalledWith(userId, mockUpdatePasswordDTO);
+      expect(service.updatePassword).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ success: true, message: 'Password updated successfully' });
+    });
+
+    it('should propagate errors from appService', async () => {
+      const userId = '123e4567-e89b-12d3-a456-426614174000';
+      const mockUpdatePasswordDTO = {
+        password: 'currentPassword123',
+        newPassword: 'newPassword123',
+      };
+      const mockData = { userId, requestUpdatePasswordDTO: mockUpdatePasswordDTO };
+
+      const error = new Error('Service error');
+      service.updatePassword.mockRejectedValue(error);
+
+      await expect(controller.updatePassword(mockData)).rejects.toThrow(error);
+      expect(service.updatePassword).toHaveBeenCalledWith(userId, mockUpdatePasswordDTO);
     });
   });
 });

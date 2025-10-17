@@ -13,8 +13,40 @@ export class AppController {
   }
 
   @MessagePattern('getTasks')
-  getTasks(@Payload() data: { userId: string; page?: number; size?: number }) {
-    return this.appService.getTasks(data.userId, data.page, data.size);
+  getTasks(
+    @Payload()
+    data: {
+      userId: string;
+      page?: number;
+      size?: number;
+      q?: string;
+      status?: string;
+      priority?: string;
+    },
+  ) {
+    return this.appService.getTasks(data.userId, data.page, data.size, {
+      q: data.q,
+      status: data.status,
+      priority: data.priority,
+    });
+  }
+
+  @MessagePattern('getAllTasks')
+  getAllTasks(
+    @Payload()
+    data: {
+      page?: number;
+      size?: number;
+      q?: string;
+      status?: string;
+      priority?: string;
+    },
+  ) {
+    return this.appService.getAllTasks(data.page, data.size, {
+      q: data.q,
+      status: data.status,
+      priority: data.priority,
+    });
   }
 
   @MessagePattern('getTask')
@@ -57,5 +89,9 @@ export class AppController {
       data.page,
       data.size,
     );
+  }
+  @MessagePattern('health')
+  async health(): Promise<{ status: string }> {
+    return { status: 'up' };
   }
 }

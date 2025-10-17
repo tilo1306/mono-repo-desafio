@@ -56,13 +56,13 @@ describe('AppController', () => {
   });
 
   it('should get tasks with pagination', async () => {
-    const payload = { userId: 'u1', page: 2, size: 5 };
+    const payload = { userId: 'u1', page: 2, size: 5, q: undefined, status: undefined, priority: undefined };
     const expected = { total: 1, data: [] };
     mockService.getTasks.mockResolvedValue(expected);
 
     const result = await controller.getTasks(payload);
 
-    expect(service.getTasks).toHaveBeenCalledWith(payload.userId, 2, 5);
+    expect(service.getTasks).toHaveBeenCalledWith(payload.userId, 2, 5, { q: undefined, status: undefined, priority: undefined });
     expect(result).toEqual(expected);
   });
 

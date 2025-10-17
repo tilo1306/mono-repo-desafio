@@ -19,6 +19,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
+    let error = 'Internal Server Error';
 
     if (exception instanceof RpcException) {
       const rpcError = exception.getError();
@@ -26,6 +27,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         status =
           (rpcError as any).statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
         message = (rpcError as any).message || 'Microservice error';
+        error = (rpcError as any).error || 'Internal Server Error';
       } else {
         message = String(rpcError);
       }
@@ -37,17 +39,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     ) {
       status = (exception as any).statusCode;
       message = (exception as any).message;
+      error = (exception as any).error || 'Error';
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         message = (exceptionResponse as any).message || exception.message;
+        error = (exceptionResponse as any).error || exception.name;
       } else {
         message = exception.message;
+        error = exception.name;
       }
     } else if (exception instanceof Error) {
       message = exception.message;
+      error = exception.name;
       this.logger.error(
         `Unhandled error: ${exception.message} | date: ${new Date().toISOString()}`,
         exception.stack,
@@ -62,6 +68,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     response.status(status).json({
       statusCode: status,
       message,
+      error,
     });
   }
 }

@@ -5,6 +5,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
+import { InternalWebSocketController } from './controllers/internal-websocket.controller';
+import { NotificationWebSocketGateway } from './gateways/notification-websocket.gateway';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { NotificationModule } from './modules/notification/notification.module';
@@ -60,8 +63,11 @@ import { TaskModule } from './modules/task/task.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET', 'your-secret-key'),
-        signOptions: { expiresIn: '1h' },
+        secret: configService.get('JWT_SECRET', 'secret123'),
+        signOptions: {
+          expiresIn: '1h',
+          algorithm: 'HS256',
+        },
       }),
       inject: [ConfigService],
       global: true,
@@ -71,8 +77,13 @@ import { TaskModule } from './modules/task/task.module';
     NotificationModule,
     TaskModule,
   ],
-  controllers: [],
+  controllers: [InternalWebSocketController],
   providers: [
+    NotificationWebSocketGateway,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

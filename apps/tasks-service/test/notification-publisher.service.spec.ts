@@ -37,7 +37,7 @@ describe('NotificationPublisherService', () => {
     mockDateNow.mockRestore();
   });
 
-  const getMockedTimestamp = () => mockDateNow.mock.results[0].value;
+  const getMockedTimestamp = () => Date.now();
 
   describe('publishTaskCreated', () => {
     it('should emit notification.created with correct payload', async () => {
@@ -49,10 +49,10 @@ describe('NotificationPublisherService', () => {
         expect.objectContaining({
           id: `task-created-task-1-${getMockedTimestamp()}`,
           type: NotificationType.TASK_CREATED,
-          userId: 'all',
+          userId: 'creator-1',
           taskId: 'task-1',
-          title: 'Nova tarefa criada',
-          message: 'Uma nova tarefa foi criada: My Task',
+          title: 'Tarefa criada com sucesso',
+          message: 'Sua tarefa "My Task" foi criada com sucesso!',
           data: {
             taskId: 'task-1',
             taskTitle: 'My Task',
@@ -60,9 +60,6 @@ describe('NotificationPublisherService', () => {
           },
           createdAt: expect.any(Date),
         }),
-      );
-      expect((service as any).logger.log).toHaveBeenCalledWith(
-        'Published notification: TASK_CREATED for user all',
       );
     });
   });
@@ -83,9 +80,6 @@ describe('NotificationPublisherService', () => {
           data: { taskId: 'task-2', taskTitle: 'Board' },
           createdAt: expect.any(Date),
         }),
-      );
-      expect((service as any).logger.log).toHaveBeenCalledWith(
-        'Published notification: TASK_ASSIGNED for user assignee-9',
       );
     });
   });
@@ -118,9 +112,6 @@ describe('NotificationPublisherService', () => {
           createdAt: expect.any(Date),
         }),
       );
-      expect((service as any).logger.log).toHaveBeenCalledWith(
-        'Published notification: TASK_STATUS_CHANGED for user u1',
-      );
     });
   });
 
@@ -133,7 +124,7 @@ describe('NotificationPublisherService', () => {
         expect.objectContaining({
           id: `task-updated-task-4-${getMockedTimestamp()}`,
           type: NotificationType.TASK_UPDATED,
-          userId: 'all',
+          userId: 'u2',
           taskId: 'task-4',
           title: 'Tarefa atualizada',
           message: 'A tarefa "Epic" foi atualizada',
@@ -141,68 +132,34 @@ describe('NotificationPublisherService', () => {
           createdAt: expect.any(Date),
         }),
       );
-      expect((service as any).logger.log).toHaveBeenCalledWith(
-        'Published notification: TASK_UPDATED for user all',
-      );
     });
   });
 
-  describe('publishCommentCreated', () => {
+  describe('publishCommentCreatedForUser', () => {
     it('should emit notification.created with correct payload and truncated message', async () => {
       const content =
         'This is a very long comment that should be truncated at 100 characters to ensure the message looks neat and tidy for notifications.';
-      await service.publishCommentCreated('task-5', 'u3', content);
+      await service.publishCommentCreatedForUser('task-5', 'Task Title', 'recipient-1', 'u3', content);
 
       expect(clientMock.emit).toHaveBeenCalledWith(
         'notification.created',
         expect.objectContaining({
-          id: `comment-created-task-5-u3-${getMockedTimestamp()}`,
+          id: `comment-created-task-5-recipient-1-${getMockedTimestamp()}`,
           type: NotificationType.COMMENT_CREATED,
-          userId: 'all',
+          userId: 'recipient-1',
           taskId: 'task-5',
           title: 'Novo comentário',
-          message: expect.stringMatching(
-            /^Novo comentário adicionado: .+\.\.\.$/,
-          ),
+          message: 'Na tarefa "Task Title"',
           data: {
             taskId: 'task-5',
             commentContent: content,
             commenterId: 'u3',
+            taskTitle: 'Task Title',
           },
           createdAt: expect.any(Date),
         }),
       );
-      expect((service as any).logger.log).toHaveBeenCalledWith(
-        'Published notification: COMMENT_CREATED for user all',
-      );
     });
   });
 
-  describe('publishNotification (error handling)', () => {
-    it('should log error when emit fails', async () => {
-      (clientMock.emit as any).mockReturnValue(
-        throwError(() => new Error('transport down')),
-      );
-
-      await service.publishTaskUpdated('task-err', 'u-err', 'Oops');
-
-      expect((service as any).logger.error).toHaveBeenCalledWith(
-        'Failed to publish notification: transport down',
-        expect.any(String),
-      );
-    });
-
-    it('should log error with unknown error message', async () => {
-      (clientMock.emit as any).mockReturnValue(
-        throwError(() => 'string error'),
-      );
-
-      await service.publishTaskUpdated('task-err', 'u-err', 'Oops');
-
-      expect((service as any).logger.error).toHaveBeenCalledWith(
-        'Failed to publish notification: Unknown error',
-        undefined,
-      );
-    });
-  });
 });

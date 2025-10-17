@@ -2,10 +2,7 @@ import { Controller, Get, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
-  DiskHealthIndicator,
   HealthCheck,
-  HealthCheckService,
-  MemoryHealthIndicator,
 } from '@nestjs/terminus';
 import { firstValueFrom, timeout } from 'rxjs';
 
@@ -13,11 +10,9 @@ import { firstValueFrom, timeout } from 'rxjs';
 @Controller('health')
 export class HealthController {
   constructor(
-    private health: HealthCheckService,
-    private memory: MemoryHealthIndicator,
-    private disk: DiskHealthIndicator,
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     @Inject('TASKS_SERVICE') private readonly tasksClient: ClientProxy,
+    @Inject('NOTIFICATION_SERVICE') private readonly notificationClient: ClientProxy,
   ) {}
 
   @Get()
@@ -38,6 +33,7 @@ export class HealthController {
           properties: {
             auth_service: { type: 'string', example: 'up' },
             tasks_service: { type: 'string', example: 'up' },
+            notifications_service: { type: 'string', example: 'up' },
           },
         },
         error: { type: 'object', example: {} },
@@ -46,6 +42,7 @@ export class HealthController {
           properties: {
             auth_service: { type: 'string', example: 'up' },
             tasks_service: { type: 'string', example: 'up' },
+            notifications_service: { type: 'string', example: 'up' },
           },
         },
       },
@@ -55,6 +52,7 @@ export class HealthController {
     const healthChecks = {
       auth_service: 'down',
       tasks_service: 'down',
+      notifications_service: 'down',
     };
 
     const errors = {};
@@ -76,6 +74,16 @@ export class HealthController {
       healthChecks.tasks_service = 'up';
     } catch (error) {
       errors['tasks_service'] =
+        error instanceof Error ? error.message : 'Connection failed';
+    }
+
+    try {
+      await firstValueFrom(
+        this.notificationClient.send('health', {}).pipe(timeout(5000)),
+      );
+      healthChecks.notifications_service = 'up';
+    } catch (error) {
+      errors['notifications_service'] =
         error instanceof Error ? error.message : 'Connection failed';
     }
 

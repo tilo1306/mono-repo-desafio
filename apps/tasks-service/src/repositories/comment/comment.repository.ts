@@ -20,7 +20,7 @@ export class CommentRepository implements ICommentRepository {
   }): Promise<Comment> {
     const comment = this.commentRepository.create({
       taskId: data.taskId,
-      authorId: data.userId,
+      userId: data.userId,
       content: data.content,
     });
 
@@ -38,6 +38,17 @@ export class CommentRepository implements ICommentRepository {
       skip,
       take: size,
     });
+
+    for (const comment of comments) {
+      const userQuery = this.commentRepository.manager
+        .createQueryBuilder()
+        .select(['u.name as name', 'u.avatar as avatar', 'u.email as email'])
+        .from('user', 'u')
+        .where('u.id = :userId', { userId: comment.userId });
+
+      const user = await userQuery.getRawOne();
+      (comment as any).user = user;
+    }
 
     const totalPages = Math.ceil(total / size);
 

@@ -1,11 +1,9 @@
-version: "3.9"
-
 x-node-service: &node-service
   restart: unless-stopped
   networks:
     - challenge-network
   environment:
-    - NODE_ENV=development
+    - NODE_ENV=production
     - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
     - DB_HOST=db
     - DB_PORT=5432
@@ -19,7 +17,7 @@ x-node-service: &node-service
       condition: service_healthy
 
 services:
-  # Frontend (Next.js/React)
+  # Frontend (React/Vite)
   web:
     <<: *node-service
     container_name: web
@@ -28,12 +26,8 @@ services:
       dockerfile: ./apps/web/Dockerfile
     ports:
       - "3000:3000"
-    command: npm run dev -- --host 0.0.0.0
-    volumes:
-      - .:/app
-      - web_node_modules:/app/apps/web/node_modules
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=3000
 
   # API Gateway
@@ -47,11 +41,11 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+      - JWT_SECRET=secret123
       - PORT=3001
     volumes:
-      - .:/app
-      - apigw_node_modules:/app/apps/api-gateway/node_modules
+      - shared_uploads:/app/shared/uploads
 
   # Auth Service
   auth-service:
@@ -64,9 +58,15 @@ services:
       - "3002:3002"
     environment:
       - PORT=3002
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=challenge_db
+      - JWT_SECRET=secret123
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
     volumes:
-      - .:/app
-      - auth_node_modules:/app/apps/auth-service/node_modules
+      - shared_uploads:/app/shared/uploads
 
   # Tasks Service
   tasks-service:
@@ -79,9 +79,13 @@ services:
       - "3003:3003"
     environment:
       - PORT=3003
-    volumes:
-      - .:/app
-      - tasks_node_modules:/app/apps/tasks-service/node_modules
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=challenge_db
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+    # Volumes removidos para evitar conflitos com o build
 
   # Notifications Service
   notifications-service:
@@ -93,10 +97,9 @@ services:
     ports:
       - "3004:3004"
     environment:
+      - NODE_ENV=production
       - PORT=3004
-    volumes:
-      - .:/app
-      - notif_node_modules:/app/apps/notifications-service/node_modules
+      - API_GATEWAY_URL=http://api-gateway:3001
 
   # Postgres (dev)
   db:
@@ -120,11 +123,10 @@ services:
       retries: 20
       start_period: 10s
 
-  # Postgres (test) - sobe só quando pedir: `--profile test up`
+  # Postgres (test) - banco de teste
   db-test:
     image: postgres:17-alpine
     container_name: db-test
-    profiles: ["test"]
     restart: unless-stopped
     ports:
       - "5433:5432"
@@ -169,11 +171,7 @@ volumes:
   postgres_data:
   postgres_test_data:
   rabbitmq_data:
-  web_node_modules:
-  apigw_node_modules:
-  auth_node_modules:
-  tasks_node_modules:
-  notif_node_modules:
+  shared_uploads:
 
 networks:
   challenge-network:

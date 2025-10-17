@@ -19,13 +19,13 @@ import { WebSocketService } from './services/websocket.service';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
+        host: configService.get('DB_HOST', 'db'),
         port: configService.get('DB_PORT', 5432),
         username: configService.get('DB_USERNAME', 'postgres'),
         password: configService.get('DB_PASSWORD', 'password'),
         database: configService.get('DB_NAME', 'challenge_db'),
         entities: [Notification],
-        migrations: ['src/migrations/*.ts'],
+        migrations: ['dist/migrations/*.js'],
         migrationsRun: true,
         synchronize: false,
       }),
@@ -33,10 +33,9 @@ import { WebSocketService } from './services/websocket.service';
     }),
     TypeOrmModule.forFeature([Notification]),
   ],
-  controllers: [AppController],
+  controllers: [AppController, NotificationConsumer],
   providers: [
     AppService,
-    NotificationConsumer,
     WebSocketService,
     NotificationWebSocketGateway,
     {

@@ -10,7 +10,10 @@ import { AuthJwtService } from './jwt.service';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET', 'secret123'),
-        signOptions: { expiresIn: '15m' },
+        signOptions: {
+          expiresIn: '15m',
+          algorithm: 'HS256',
+        },
       }),
       inject: [ConfigService],
     }),

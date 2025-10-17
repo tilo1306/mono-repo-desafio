@@ -23,10 +23,17 @@
     "test:e2e:setup": "cp env.test.example .env.test",
     "test:e2e:db:up": "docker-compose up -d db-test",
     "test:e2e:db:down": "docker-compose down db-test",
+    "test:all": "npm run test && npm run test:e2e",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "pnpm typeorm migration:generate src/migrations/CreateTasksServiceTables -d typeorm.config.ts",
     "migration:run": "pnpm typeorm migration:run -d typeorm.config.ts",
-    "migration:revert": "pnpm typeorm migration:revert -d typeorm.config.ts"
+    "migration:revert": "pnpm typeorm migration:revert -d typeorm.config.ts",
+    "seed:tasks": "ts-node src/seed/run-tasks-seed.ts",
+    "db:setup": "pnpm run migration:run && pnpm run seed:tasks",
+    "db:migrate": "pnpm run migration:run",
+    "db:seed": "pnpm run seed:tasks",
+    "db:test:setup": "DB_HOST=localhost DB_PORT=5433 DB_NAME=challenge_test_db pnpm run migration:run",
+    "db:test:migrate": "DB_HOST=localhost DB_PORT=5433 DB_NAME=challenge_test_db pnpm run migration:run"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
@@ -36,6 +43,7 @@
     "@nestjs/platform-express": "^11.1.6",
     "@nestjs/typeorm": "^11.0.0",
     "@repo/types": "workspace:*",
+    "@repo/utils": "workspace:*",
     "amqp-connection-manager": "^4.1.14",
     "amqplib": "^0.10.4",
     "class-transformer": "^0.5.1",
@@ -92,6 +100,9 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@repo|@nestjs)/)"
     ],
     "moduleNameMapper": {
       "^@repo/(.*)$": "<rootDir>/../../packages/$1/src"

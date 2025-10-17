@@ -19,6 +19,11 @@
     "test:cov": "jest --coverage --passWithNoTests",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:watch": "jest --config ./test/jest-e2e.json --watch",
+    "test:e2e:setup": "cp env.test.example .env.test",
+    "test:e2e:db:up": "docker-compose up -d db-test",
+    "test:e2e:db:down": "docker-compose down db-test",
+    "test:all": "npm run test && npm run test:e2e",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "pnpm typeorm migration:generate src/migrations/CreateNotificationTable -d typeorm.config.ts",
     "migration:run": "pnpm typeorm migration:run -d typeorm.config.ts",
@@ -26,7 +31,7 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
-    "@nestjs/config": "^3.3.0",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.6",
     "@nestjs/microservices": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
@@ -76,18 +81,18 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@repo/(.*)$": "<rootDir>/../../../packages/$1/src"
+      "^@repo/(.*)$": "<rootDir>/../../packages/$1/src"
     },
     "transformIgnorePatterns": [
       "node_modules/(?!(@repo)/)"

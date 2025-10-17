@@ -19,7 +19,7 @@ export class Comment {
 
   @Index()
   @Column({ type: 'uuid' })
-  authorId: string;
+  userId: string;
 
   @Column({ type: 'text' })
   content: string;

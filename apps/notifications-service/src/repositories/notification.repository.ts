@@ -56,10 +56,13 @@ export class NotificationRepository implements INotificationRepository {
   }
 
   async markAllAsRead(userId: string): Promise<void> {
+    this.logger.log(`Starting markAllAsRead for user ${userId}`);
+    
     await this.notificationRepository.update(
       { userId, isRead: false },
       { isRead: true },
     );
+
     this.logger.log(`Marked all notifications as read for user ${userId}`);
   }
 }

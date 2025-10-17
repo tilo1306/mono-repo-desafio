@@ -1,7 +1,7 @@
-// Jest setup file
 import 'reflect-metadata';
 
-// Mock console methods to reduce noise in tests
+declare const jest: any;
+
 global.console = {
   ...console,
   log: jest.fn(),
@@ -11,7 +11,6 @@ global.console = {
   error: jest.fn(),
 };
 
-// Set test environment variables
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret';
 process.env.DB_HOST = 'localhost';
